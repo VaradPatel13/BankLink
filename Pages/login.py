@@ -1,3 +1,4 @@
+import sqlite3
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
@@ -7,6 +8,7 @@ from kivy.uix.image import Image
 from kivy.core.window import Window
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.popup import Popup
+from Pages.dashboard import DashboardScreen
 
 # Set the app window size (optional, for testing)
 Window.size = (360, 640)
@@ -29,18 +31,11 @@ class LoginScreen(Screen):
         background = Image(source='background.jpg', allow_stretch=True, keep_ratio=False)
         layout.add_widget(background)
 
-        # Overlay for better readability
-        overlay = Image(source='assets/bank.png', allow_stretch=True, keep_ratio=False)
-        layout.add_widget(overlay)
-
         # Input fields container
         input_layout = BoxLayout(orientation='vertical', spacing=15, padding=30, size_hint=(0.9, 0.6),
                                  pos_hint={'center_x': 0.5, 'center_y': 0.5})
 
-        # Logo above the Account Number input
-        logo = Image(source='Pages/assets/Bank.png', size=(200, 200), pos_hint={'center_x': 0.5})
-        input_layout.add_widget(logo)
-
+        # Logo
         logo = Image(
             source='Pages/assets/Bank.png',
             size_hint=(None, None),  # Disable size_hint
@@ -50,9 +45,10 @@ class LoginScreen(Screen):
             pos_hint={'center_x': 0.5}
         )
         input_layout.add_widget(logo)
-        # Account Number Input
+
+        # Account Number / Mobile Input
         self.account_input = TextInput(
-            hint_text="Account Number",
+            hint_text="Account Number or Mobile Number",
             multiline=False,
             size_hint=(1, None),
             height=50,
@@ -107,7 +103,7 @@ class LoginScreen(Screen):
             color=SECONDARY_COLOR,
             font_size=14
         )
-        forgot_password.bind(on_press=self.show_forgot_password_popup)
+        forgot_password.bind(on_press=self.switch_to_forgot_password)
 
         create_account = Button(
             text="Create New Account",
@@ -117,7 +113,7 @@ class LoginScreen(Screen):
             color=SECONDARY_COLOR,
             font_size=14
         )
-        create_account.bind(on_press=self.show_create_account_popup)
+        create_account.bind(on_press=self.switch_to_create_account)
 
         links_layout.add_widget(forgot_password)
         links_layout.add_widget(create_account)
@@ -127,78 +123,59 @@ class LoginScreen(Screen):
 
         self.add_widget(layout)
 
+    def switch_to_create_account(self, instance):
+        self.manager.current = 'create_account'
+
     def login(self, instance):
-        # Validate inputs
-        account_number = self.account_input.text
-        password = self.password_input.text
+        """Handles user login with SQLite authentication"""
+        user_input = self.account_input.text.strip()
+        password = self.password_input.text.strip()
 
-        if not account_number or not password:
+        if not user_input or not password:
             self.show_error_popup("Error", "Please fill in all fields.")
-        else:
+            return
+
+        user_data = self.authenticate_user(user_input, password)  # Fetch full user data
+
+        if user_data:  # Ensure user_data is not None
             print("Login successful!")
-            # Add your login logic here (e.g., Firebase authentication)
 
-    def show_error_popup(self, title, message):
-        popup = Popup(
-            title=title,
-            size_hint=(0.8, 0.4),
-            content=Label(text=message, font_size=16, color=TEXT_COLOR),
-            separator_height=0,
-            background_color=SECONDARY_COLOR
-        )
-        popup.open()
+            # Remove existing dashboard if it already exists
+            if self.manager.has_screen('dashboard'):
+                self.manager.remove_widget(self.manager.get_screen('dashboard'))
 
-    def show_forgot_password_popup(self, instance):
-        content = BoxLayout(orientation='vertical', spacing=10, padding=10)
-        email_input = TextInput(hint_text="Enter your email", multiline=False, size_hint=(1, None), height=40,
-                                background_color=ACCENT_COLOR, foreground_color=TEXT_COLOR)
-        submit_button = Button(text="Submit", size_hint=(1, None), height=40, background_color=PRIMARY_COLOR,
-                               color=ACCENT_COLOR)
-        content.add_widget(email_input)
-        content.add_widget(submit_button)
-
-        popup = Popup(
-            title="Forgot Password",
-            size_hint=(0.8, 0.4),
-            content=content,
-            separator_height=0,
-            background_color=SECONDARY_COLOR
-        )
-        submit_button.bind(on_press=lambda x: self.reset_password(email_input.text, popup))
-        popup.open()
-
-    def reset_password(self, email, popup):
-        if email:
-            print(f"Password reset link sent to {email}")
-            popup.dismiss()
+            # Create DashboardScreen with user data
+            dashboard_screen = DashboardScreen(user_data=user_data, name='dashboard')
+            self.manager.add_widget(dashboard_screen)
+            self.manager.current = 'dashboard'
         else:
-            self.show_error_popup("Error", "Please enter a valid email.")
+            self.show_error_popup("Login Failed", "Invalid account number, mobile number, or password.")
 
-    def show_create_account_popup(self, instance):
-        content = BoxLayout(orientation='vertical', spacing=10, padding=10)
-        email_input = TextInput(hint_text="Enter your email", multiline=False, size_hint=(1, None), height=40,
-                                background_color=ACCENT_COLOR, foreground_color=TEXT_COLOR)
-        password_input = TextInput(hint_text="Create a password", multiline=False, password=True, size_hint=(1, None),
-                                   height=40, background_color=ACCENT_COLOR, foreground_color=TEXT_COLOR)
-        submit_button = Button(text="Create Account", size_hint=(1, None), height=40, background_color=PRIMARY_COLOR,
-                               color=ACCENT_COLOR)
-        content.add_widget(email_input)
-        content.add_widget(password_input)
-        content.add_widget(submit_button)
+    def authenticate_user(self, user_input, password):
+        """Authenticate user and return their full details"""
+        try:
+            conn = sqlite3.connect("banklink.db")  # Connect to the database
+            cursor = conn.cursor()
 
-        popup = Popup(
-            title="Create New Account",
-            size_hint=(0.8, 0.5),
-            content=content,
-            separator_height=0,
-            background_color=SECONDARY_COLOR
-        )
-        submit_button.bind(on_press=lambda x: self.create_account(email_input.text, password_input.text, popup))
-        popup.open()
+            # Fetch user details where account number or mobile matches and password is correct
+            cursor.execute(
+                "SELECT account_number, name, address, mobile FROM users WHERE (account_number = ? OR mobile = ?) AND password = ?",
+                (user_input, user_input, password)
+            )
+            result = cursor.fetchone()
+            conn.close()
 
-    def create_account(self, email, password, popup):
-        if email and password:
-            print(f"Account created for {email}")
-            popup.dismiss()
-        else:
-            self.show_error_popup("Error", "Please fill in all fields.")
+            if result:  # If user exists
+                return {
+                    "account_number": result[0],
+                    "name": result[1],
+                    "address": result[2],
+                    "mobile": result[3]
+                }
+            return None  # If no match found, return None
+        except sqlite3.Error as e:
+            print("Database error:", e)
+            return None
+
+    def switch_to_forgot_password(self, instance):
+        self.manager.current = 'forgot_password'
