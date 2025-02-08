@@ -101,7 +101,7 @@ class CreateAccountScreen(Screen):
             size_hint=(1, None),
             height=50,
             background_normal='',
-            background_color=PRIMARY_COLOR,
+            background_color=SECONDARY_COLOR,
             color=ACCENT_COLOR,
             font_size=18,
             bold=True
@@ -152,8 +152,26 @@ class CreateAccountScreen(Screen):
         create_button.bind(on_press=self.create_account)
         input_layout.add_widget(create_button)
 
+        # Back Button (below Create Account button)
+        back_button = Button(
+            text="Back",
+            size_hint=(1, None),
+            height=50,
+            background_normal='',
+            background_color=PRIMARY_COLOR,
+            color=ACCENT_COLOR,
+            font_size=18,
+            bold=True
+        )
+        back_button.bind(on_press=self.go_back)
+        input_layout.add_widget(back_button)
+
         layout.add_widget(input_layout)
         self.add_widget(layout)
+
+    def go_back(self, instance):
+        """Navigate to login screen"""
+        self.manager.current = 'login'
 
     def send_otp(self, instance):
         mobile = self.mobile_input.text

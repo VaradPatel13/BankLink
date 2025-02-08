@@ -17,7 +17,6 @@ SECONDARY_COLOR = (0.58, 0.44, 0.86, 1)  # Light Purple (#9370DB)
 ACCENT_COLOR = (1, 1, 1, 1)  # White (#FFFFFF)
 TEXT_COLOR = (0.2, 0.2, 0.2, 1)  # Dark Gray (#333333)
 
-
 class ForgotPasswordScreen(Screen):
     def __init__(self, **kwargs):
         super(ForgotPasswordScreen, self).__init__(**kwargs)
@@ -96,6 +95,19 @@ class ForgotPasswordScreen(Screen):
         )
         submit_button.bind(on_press=self.verify_user)
 
+        # Back Button
+        back_button = Button(
+            text="Back to Login",
+            size_hint=(1, None),
+            height=45,
+            background_color=SECONDARY_COLOR,  # Light Purple
+            color=ACCENT_COLOR,
+            bold=True,
+            font_size=16,
+            background_normal=''
+        )
+        back_button.bind(on_press=self.go_to_login)
+
         # Assemble UI components
         input_layout.add_widget(self.account_input)
         input_layout.add_widget(self.mobile_input)
@@ -103,6 +115,7 @@ class ForgotPasswordScreen(Screen):
         content.add_widget(title)
         content.add_widget(input_layout)
         content.add_widget(submit_button)
+        content.add_widget(back_button)  # Add the back button at the bottom
 
         main_layout.add_widget(content)
         self.add_widget(main_layout)
@@ -111,7 +124,9 @@ class ForgotPasswordScreen(Screen):
         self.rect.pos = instance.pos
         self.rect.size = instance.size
 
-
+    def go_to_login(self, instance):
+        """Navigate to the login screen."""
+        self.manager.current = 'login'
 
     def verify_user(self, instance):
         """Verify the user before resetting password."""

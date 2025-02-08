@@ -8,7 +8,9 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.core.window import Window
 from kivy.graphics import Color, Rectangle
-
+import pyqrcode
+import os
+from kivy.uix.popup import Popup
 
 Window.size = (360, 640)
 
@@ -23,6 +25,8 @@ class DashboardScreen(Screen):
     def __init__(self, user_data, **kwargs):
         super(DashboardScreen, self).__init__(**kwargs)
         self.user_data = user_data
+        self.qr_code_path = f"{self.user_data['account_number']}_qrcode.png"  # Define QR code path
+        self.generate_qr_code()  # Generate the QR code on initialization
         layout = FloatLayout()
 
         # White Background
@@ -68,7 +72,7 @@ class DashboardScreen(Screen):
             pos_hint={'center_y': 0.5},
             size_hint=(None, None),
             size=(48, 48),
-            on_press = self.switch_to_user_info
+            on_press=self.switch_to_user_info
         )
 
         top_bar.add_widget(icon)
@@ -107,7 +111,7 @@ class DashboardScreen(Screen):
 
         layout.add_widget(buttons_grid)
 
-        # ID Button
+        # ID Button - Now it opens QR Code popup when clicked
         id_button = Button(
             text=f"{self.user_data['account_number']}@banklink",
             size_hint=(0.7, None),
@@ -119,6 +123,7 @@ class DashboardScreen(Screen):
             bold=True,
             background_normal=''
         )
+        id_button.bind(on_press=self.show_qr_code)  # Bind the function to show the QR code
         layout.add_widget(id_button)
 
         # Transaction Buttons
@@ -170,6 +175,39 @@ class DashboardScreen(Screen):
         layout.add_widget(nav_layout)
 
         self.add_widget(layout)
+
+    def generate_qr_code(self):
+        """Generate a QR code for the user's account if not already created."""
+        if not os.path.exists(self.qr_code_path):
+            qr = pyqrcode.create(self.user_data['account_number'])
+            qr.png(self.qr_code_path, scale=6)
+            print(f"QR Code generated: {self.qr_code_path}")
+
+    def show_qr_code(self, instance):
+        """Display the QR code in a popup."""
+        self.generate_qr_code()  # Ensure QR code is generated before showing
+
+        popup_layout = BoxLayout(orientation='vertical', padding=20, spacing=10)
+
+        qr_image = Image(source=self.qr_code_path, size_hint=(1, 1))
+        close_button = Button(
+            text="Close",
+            size_hint=(1, None),
+            height=40,
+            background_color=PRIMARY_COLOR,
+            color=ACCENT_COLOR
+        )
+
+        popup_layout.add_widget(qr_image)
+        popup_layout.add_widget(close_button)
+
+        popup = Popup(
+            title="Your QR Code",
+            content=popup_layout,
+            size_hint=(0.8, 0.6)
+        )
+        close_button.bind(on_press=popup.dismiss)
+        popup.open()
 
     def switch_to_user_info(self, instance):
         """Switch to User Info Screen"""
@@ -265,6 +303,22 @@ class UserInfoScreen(Screen):
             ))
 
         layout.add_widget(info_layout)
+
+        # Logout Button (at the bottom of the screen)
+        logout_btn = Button(
+            text="Logout",
+            size_hint=(0.7, None),
+            height=50,
+            pos_hint={'center_x': 0.5, 'center_y': 0.10},
+            background_color=PRIMARY_COLOR,
+            color=ACCENT_COLOR,
+            font_size=16,
+            bold=True,
+            background_normal=''
+        )
+        logout_btn.bind(on_press=self.logout)
+        layout.add_widget(logout_btn)
+
         self.add_widget(layout)
 
     def _update_rect(self, instance, value):
@@ -273,3 +327,7 @@ class UserInfoScreen(Screen):
 
     def go_back(self, instance):
         self.manager.current = 'dashboard'
+
+    def logout(self, instance):
+        """Handle the logout process"""
+        self.manager.current = 'login'

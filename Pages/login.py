@@ -1,10 +1,11 @@
 import sqlite3
+import os
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
-from kivy.uix.image import Image
+from kivy.uix.image import Image, CoreImage
 from kivy.core.window import Window
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.popup import Popup
@@ -13,12 +14,15 @@ from Pages.dashboard import DashboardScreen
 # Set the app window size (optional, for testing)
 Window.size = (360, 640)
 
+# Database and QR code folder
+DB_NAME = "banklinkdemo.db"
+QR_CODE_FOLDER = "qr_codes"
+
 # Define theme colors
 PRIMARY_COLOR = (0.29, 0.0, 0.51, 1)  # Dark Purple (#4B0082)
 SECONDARY_COLOR = (0.58, 0.44, 0.86, 1)  # Light Purple (#9370DB)
 ACCENT_COLOR = (1, 1, 1, 1)  # White (#FFFFFF)
 TEXT_COLOR = (0.2, 0.2, 0.2, 1)  # Dark Gray (#333333)
-
 
 class LoginScreen(Screen):
     def __init__(self, **kwargs):
@@ -38,10 +42,10 @@ class LoginScreen(Screen):
         # Logo
         logo = Image(
             source='Pages/assets/Bank.png',
-            size_hint=(None, None),  # Disable size_hint
-            size=(400, 400),  # Set absolute size
-            allow_stretch=True,  # Allow stretching
-            keep_ratio=False,  # Disable aspect ratio
+            size_hint=(None, None),
+            size=(400, 400),
+            allow_stretch=True,
+            keep_ratio=False,
             pos_hint={'center_x': 0.5}
         )
         input_layout.add_widget(logo)
@@ -154,23 +158,31 @@ class LoginScreen(Screen):
     def authenticate_user(self, user_input, password):
         """Authenticate user and return their full details"""
         try:
-            conn = sqlite3.connect("banklink.db")  # Connect to the database
+            conn = sqlite3.connect(DB_NAME)  # Connect to the database
             cursor = conn.cursor()
 
-            # Fetch user details where account number or mobile matches and password is correct
+            # Fetch user details including QR code path
             cursor.execute(
-                "SELECT account_number, name, address, mobile FROM users WHERE (account_number = ? OR mobile = ?) AND password = ?",
+                "SELECT account_number, name, address, mobile, qr_code FROM users WHERE (account_number = ? OR mobile = ?) AND password = ?",
                 (user_input, user_input, password)
             )
             result = cursor.fetchone()
             conn.close()
 
             if result:  # If user exists
+                qr_image = None
+                qr_code_path = result[4]
+
+                # Load QR code from file path if it exists
+                if qr_code_path and os.path.exists(qr_code_path):
+                    qr_image = CoreImage(qr_code_path)  # Load the QR code as an image
+
                 return {
                     "account_number": result[0],
                     "name": result[1],
                     "address": result[2],
-                    "mobile": result[3]
+                    "mobile": result[3],
+                    "qr_code": qr_image  # Store QR code object
                 }
             return None  # If no match found, return None
         except sqlite3.Error as e:
@@ -179,3 +191,15 @@ class LoginScreen(Screen):
 
     def switch_to_forgot_password(self, instance):
         self.manager.current = 'forgot_password'
+
+    def show_error_popup(self, title, message):
+        """Displays an error popup"""
+        popup_layout = BoxLayout(orientation='vertical', spacing=10, padding=10)
+        popup_layout.add_widget(Label(text=message))
+
+        close_button = Button(text="OK", size_hint=(1, 0.3))
+        popup = Popup(title=title, content=popup_layout, size_hint=(0.8, 0.4))
+        close_button.bind(on_press=popup.dismiss)
+        popup_layout.add_widget(close_button)
+
+        popup.open()
