@@ -10,6 +10,8 @@ from kivy.core.window import Window
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.popup import Popup
 from Pages.dashboard import DashboardScreen
+from Pages.create_account import CreateAccountScreen
+
 
 # Set the app window size (optional, for testing)
 Window.size = (360, 640)

@@ -1,0 +1,58 @@
+<UserInfoScreen>:
+    name: "user_info"
+    MDBoxLayout:
+        orientation: "vertical"
+        spacing: dp(10)
+        padding: dp(20)
+
+        MDLabel:
+            text: "User Information"
+            font_style: "H5"
+            halign: "center"
+
+        MDTextField:
+            id: pin_input
+            hint_text: "Enter new PIN (4 digits)"
+            password: True
+            helper_text: "Must be 4 digits"
+            helper_text_mode: "on_focus"
+
+        MDRaisedButton:
+            text: "Change PIN"
+            on_release: root.change_pin(pin_input.text)
+
+        MDTextField:
+            id: mobile_input
+            hint_text: "Enter new Mobile Number"
+            helper_text: "Must be 10 digits"
+            helper_text_mode: "on_focus"
+
+        MDRaisedButton:
+            text: "Change Mobile Number"
+            on_release: root.change_mobile(mobile_input.text)
+
+        MDTextField:
+            id: name_input
+            hint_text: "Enter new Name"
+
+        MDRaisedButton:
+            text: "Change Name"
+            on_release: root.change_name(name_input.text)
+
+        MDTextField:
+            id: address_input
+            hint_text: "Enter new Address"
+
+        MDRaisedButton:
+            text: "Change Address"
+            on_release: root.change_address(address_input.text)
+
+        MDLabel:
+            id: status_label
+            text: ""
+            theme_text_color: "Error"
+            halign: "center"
+
+        MDRaisedButton:
+            text: "Back"
+            on_release: app.root.current = "dashboard"

@@ -4,7 +4,7 @@ from Pages.login import LoginScreen
 from Pages.create_account import CreateAccountScreen
 from Pages.dashboard import DashboardScreen
 from Pages.payment import PaymentScreen
-from Pages.user_info import UserInfoScreen
+from Pages.user_info import UpdateUserInfoScreen
 from Pages.forgot_password_screen import ForgotPasswordScreen
 
 class BankLinkApp(MDApp):  # ✅ Change App to MDApp
@@ -23,7 +23,7 @@ class BankLinkApp(MDApp):  # ✅ Change App to MDApp
         screen_manager.add_widget(CreateAccountScreen(name='create_account'))
         screen_manager.add_widget(DashboardScreen(name='dashboard', user_data=user_data))  # ✅ FIXED
         screen_manager.add_widget(PaymentScreen(name='payment'))
-        screen_manager.add_widget(UserInfoScreen(name='user_info'))
+        screen_manager.add_widget(UpdateUserInfoScreen(name='user_info'))
         screen_manager.add_widget(ForgotPasswordScreen(name='forgot_password'))
 
         return screen_manager
