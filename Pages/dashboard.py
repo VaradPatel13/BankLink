@@ -16,6 +16,8 @@ from kivy.graphics import Color, RoundedRectangle
 from kivymd.uix.button import MDRectangleFlatButton
 from Pages.user_info import UpdateUserInfoScreen
 from kivy.uix.screenmanager import ScreenManager
+from Pages.check_balance import CheckBalanceScreen
+from Pages.To_Mobile import MobilePaymentScreen
 
 
 Window.size = (360, 640)
@@ -270,20 +272,29 @@ class DashboardScreen(Screen):
         self.rect.size = instance.size
 
     def open_to_mobile(self, instance):
-        print("Navigating to Mobile Transfer...")
+        """Navigate to the Mobile Payment Screen."""
+        if not self.manager.has_screen("mobile_payment"):
+            mobile_payment_screen = MobilePaymentScreen(name="mobile_payment")
+            self.manager.add_widget(mobile_payment_screen)
 
+        self.manager.current = "mobile_payment"
     def open_to_bank(self, instance):
         print("Navigating to Bank Transfer...")
 
     def open_cheque_balance(self, instance):
-        print("Checking Cheque Balance...")
+        """Navigate to Check Balance Screen"""
+        if not self.manager.has_screen("check_balance"):
+            check_balance_screen = CheckBalanceScreen(user_data=self.user_data, name="check_balance")
+            self.manager.add_widget(check_balance_screen)
 
+        self.manager.current = "check_balance"
     def open_update_info(self, instance):
         print("Opening Update Info...")
 
         # Check if the screen already exists
         if not self.manager.has_screen("update_user_info"):
-            update_info_screen = UpdateUserInfoScreen(name="update_user_info")
+            # Create the screen instance and add it to the manager
+            update_info_screen = UpdateUserInfoScreen(user_data=self.user_data, name="update_user_info")
             self.manager.add_widget(update_info_screen)
 
         # Get the screen and set the account number

@@ -16,9 +16,14 @@ def view_all_users():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM users")
-    users = cursor.fetchall()
+    # Fetch column names dynamically
+    cursor.execute("PRAGMA table_info(users)")
+    columns_info = cursor.fetchall()
+    column_names = [col[1] for col in columns_info]  # Extract column names
 
+    # Fetch all users
+    cursor.execute(f"SELECT * FROM users")
+    users = cursor.fetchall()
     conn.close()
 
     if not users:
@@ -27,22 +32,18 @@ def view_all_users():
 
     # Header Section
     print(f"\n{PRIMARY_COLOR}📌 All Registered Users 📌{RESET}")
-    print(f"{PRIMARY_COLOR}{'-' * 60}{RESET}")
+    print(f"{PRIMARY_COLOR}{'-' * 80}{RESET}")
 
-    # Column Headers
-    print(f"{SECONDARY_COLOR}{'{:<15} {:<20} {:<15} {:<10} {:<10}'.format(
-        'Account No.', 'Name', 'Mobile', 'Balance', 'Address')}{RESET}")
+    # Print Column Headers
+    print(f"{SECONDARY_COLOR}{' | '.join(column_names)}{RESET}")
+    print(f"{PRIMARY_COLOR}{'-' * 80}{RESET}")
 
-    print(f"{PRIMARY_COLOR}{'-' * 60}{RESET}")
-
-    # Data Rows
+    # Print User Data Rows
     for user in users:
-        account_number, name, address, mobile, password, balance, qr_code = user
-        row = (
-            f"{TEXT_COLOR}{account_number:<15} {name:<20} {mobile:<15} "
-            f"{ACCENT_COLOR}{balance:<10.2f}{TEXT_COLOR} {address:<10}{RESET}"
-        )
-        print(row)
+        print(f"{TEXT_COLOR}{' | '.join(map(str, user))}{RESET}")
+
+    print(f"{PRIMARY_COLOR}{'-' * 80}{RESET}\n")
+
 
 def delete_all_users():
     """Delete all records from the users table after confirmation."""
@@ -63,6 +64,7 @@ def delete_all_users():
     else:
         print(f"{SECONDARY_COLOR}Operation canceled. No records were deleted.{RESET}")
 
+
 def drop_users_table():
     """Drop the users table from the database after confirmation."""
     conn = sqlite3.connect(DB_NAME)
@@ -81,9 +83,6 @@ def drop_users_table():
             conn.close()
     else:
         print(f"{SECONDARY_COLOR}Operation canceled. The table was not dropped.{RESET}")
-
-
-
 
 
 if __name__ == "__main__":
