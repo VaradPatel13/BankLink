@@ -1,36 +1,42 @@
-import sqlite3
-import os
+import hashlib
+import firebase_admin
+from firebase_admin import auth, db, credentials
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
-from kivy.uix.image import Image, CoreImage
+from kivy.uix.image import Image
 from kivy.core.window import Window
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.popup import Popup
-from Pages.dashboard import DashboardScreen
-from Pages.create_account import CreateAccountScreen
+from kivy.clock import Clock
+from services.authentication import verify_user_credentials
 
+# Firebase Initialization (Ensure this runs only once)
+if not firebase_admin._apps:
+    cred = credentials.Certificate("D:\\Downloads\\BankLink\\Banklink_Desktop\\services\\crendential.json")
+    firebase_admin.initialize_app(cred, {
+        'databaseURL': "https://banklink-2025-default-rtdb.firebaseio.com/"
+    })
 
 # Set the app window size (optional, for testing)
 Window.size = (360, 640)
 
-# Database and QR code folder
-DB_NAME = "banklinkdemo.db"
-QR_CODE_FOLDER = "qr_codes"
-
 # Define theme colors
-PRIMARY_COLOR = (0.29, 0.0, 0.51, 1)  # Dark Purple (#4B0082)
-SECONDARY_COLOR = (0.58, 0.44, 0.86, 1)  # Light Purple (#9370DB)
-ACCENT_COLOR = (1, 1, 1, 1)  # White (#FFFFFF)
-TEXT_COLOR = (0.2, 0.2, 0.2, 1)  # Dark Gray (#333333)
+PRIMARY_COLOR = (0.29, 0.0, 0.51, 1)
+SECONDARY_COLOR = (0.58, 0.44, 0.86, 1)
+ACCENT_COLOR = (1, 1, 1, 1)
+TEXT_COLOR = (0.2, 0.2, 0.2, 1)
+
+def hash_sha256(value):
+    """Hashes the given value using SHA-256."""
+    return hashlib.sha256(value.encode()).hexdigest()
 
 class LoginScreen(Screen):
     def __init__(self, **kwargs):
         super(LoginScreen, self).__init__(**kwargs)
 
-        # Main layout
         layout = FloatLayout()
 
         # Background Image
@@ -84,7 +90,7 @@ class LoginScreen(Screen):
         input_layout.add_widget(self.password_input)
 
         # Login Button
-        login_button = Button(
+        self.login_button = Button(
             text="Login",
             size_hint=(1, None),
             height=50,
@@ -94,10 +100,9 @@ class LoginScreen(Screen):
             font_size=18,
             bold=True
         )
-        login_button.bind(on_press=self.login)
-        input_layout.add_widget(login_button)
+        self.login_button.bind(on_press=self.login)
+        input_layout.add_widget(self.login_button)
 
-        # Forgot Password and Create Account Links
         links_layout = BoxLayout(orientation='horizontal', spacing=10, size_hint=(1, None), height=30,
                                  pos_hint={'center_x': 0.5, 'center_y': 0.1})
 
@@ -132,8 +137,11 @@ class LoginScreen(Screen):
     def switch_to_create_account(self, instance):
         self.manager.current = 'create_account'
 
+    def switch_to_forgot_password(self, instance):
+        self.manager.current = 'forgot_password'
+
     def login(self, instance):
-        """Handles user login with SQLite authentication"""
+        """Handles user login with Firebase Authentication"""
         user_input = self.account_input.text.strip()
         password = self.password_input.text.strip()
 
@@ -141,67 +149,56 @@ class LoginScreen(Screen):
             self.show_error_popup("Error", "Please fill in all fields.")
             return
 
-        user_data = self.authenticate_user(user_input, password)  # Fetch full user data
+        self.login_button.text = "Logging in..."
+        self.login_button.disabled = True
 
-        if user_data:  # Ensure user_data is not None
-            print("Login successful!")
-
-            # Remove existing dashboard if it already exists
-            if self.manager.has_screen('dashboard'):
-                self.manager.remove_widget(self.manager.get_screen('dashboard'))
-
-            # Create DashboardScreen with user data
-            dashboard_screen = DashboardScreen(user_data=user_data, name='dashboard')
-            self.manager.add_widget(dashboard_screen)
-            self.manager.current = 'dashboard'
-        else:
-            self.show_error_popup("Login Failed", "Invalid account number, mobile number, or password.")
+        # 🔹 Call authenticate_user after a small delay to simulate loading
+        Clock.schedule_once(lambda dt: self.authenticate_user(user_input, password), 1)
 
     def authenticate_user(self, user_input, password):
-        """Authenticate user and return their full details"""
-        try:
-            conn = sqlite3.connect(DB_NAME)  # Connect to the database
-            cursor = conn.cursor()
+        """Handles login authentication and navigation."""
+        result = verify_user_credentials(user_input, password)
 
-            # Fetch user details including QR code path
-            cursor.execute(
-                "SELECT account_number, name, address, mobile, qr_code FROM users WHERE (account_number = ? OR mobile = ?) AND password = ?",
-                (user_input, user_input, password)
-            )
-            result = cursor.fetchone()
-            conn.close()
+        if result["success"]:
+            print(f"✅ Login successful! User ID: {result['uid']}")
+            self.login_success(result['uid'],'customer')
+            self.go_to_dashboard(result["uid"])
+        else:
+            self.show_error_popup("Login Failed", result["message"])
+            self.enable_login_button()
 
-            if result:  # If user exists
-                qr_image = None
-                qr_code_path = result[4]
+    def login_success(self,user_id, role):
+        """Call this function after successful authentication."""
+        from services.session_manager import start_session
+        start_session(user_id, role)
+        print("User logged in and session started.")
 
-                # Load QR code from file path if it exists
-                if qr_code_path and os.path.exists(qr_code_path):
-                    qr_image = CoreImage(qr_code_path)  # Load the QR code as an image
+    def enable_login_button(self):
+        """Re-enables the login button after an error."""
+        self.login_button.text = "Login"
+        self.login_button.disabled = False
 
-                return {
-                    "account_number": result[0],
-                    "name": result[1],
-                    "address": result[2],
-                    "mobile": result[3],
-                    "qr_code": qr_image  # Store QR code object
-                }
-            return None  # If no match found, return None
-        except sqlite3.Error as e:
-            print("Database error:", e)
-            return None
+    def go_to_dashboard(self, uid):
+        """Navigates to the dashboard screen with user details."""
+        from Pages.dashboard import DashboardScreen
 
-    def switch_to_forgot_password(self, instance):
-        self.manager.current = 'forgot_password'
+        if not self.manager.has_screen('dashboard'):
+            dashboard = DashboardScreen(name='dashboard')  # Store reference
+            self.manager.add_widget(dashboard)
+
+        dashboard = self.manager.get_screen('dashboard')  # Get screen reference
+        dashboard.user_id = uid  # Pass user ID properly
+        self.manager.current = 'dashboard'
 
     def show_error_popup(self, title, message):
-        """Displays an error popup"""
-        popup_layout = BoxLayout(orientation='vertical', spacing=10, padding=10)
-        popup_layout.add_widget(Label(text=message))
+        """Displays an error popup with the given title and message."""
+        layout = BoxLayout(orientation='vertical', spacing=10, padding=20)
+        layout.add_widget(Label(text=message, color=(1, 0, 0, 1), font_size=16, bold=True))
 
-        close_button = Button(text="OK", size_hint=(1, 0.3))
-        popup = Popup(title=title, content=popup_layout, size_hint=(0.8, 0.4))
+        close_button = Button(text="OK", size_hint=(1, 0.5), background_color=(0.8, 0, 0, 1))
+        popup = Popup(title=title, content=layout, size_hint=(None, None), size=(300, 200))
+
         close_button.bind(on_press=popup.dismiss)
-        popup_layout.add_widget(close_button)
+        layout.add_widget(close_button)
 
         popup.open()

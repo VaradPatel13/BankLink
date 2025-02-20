@@ -1,100 +1,153 @@
+from kivy.uix.screenmanager import Screen
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.uix.image import Image
+from kivy.uix.floatlayout import FloatLayout
+from kivy.graphics import Color, Rectangle
+from kivymd.uix.button import MDIconButton, MDRaisedButton
+from firebase_admin import db
+from services.authentication import decrypt_value  # Import decryption function
+from services.session_manager import clear_session
+
+# Theme Colors
 PRIMARY_COLOR = (0.29, 0.0, 0.51, 1)  # Dark Purple
-SECONDARY_COLOR = (0.58, 0.44, 0.86, 1)  # Light Purple
-ACCENT_COLOR = (1, 1, 1, 1)  # White
 TEXT_COLOR = (0.2, 0.2, 0.2, 1)  # Dark Gray
-
-from kivy.uix.relativelayout import RelativeLayout
-from kivymd.uix.screen import MDScreen
-from kivymd.uix.button import MDRaisedButton
-from kivy.uix.image import Image, CoreImage
-from kivymd.uix.label import MDLabel
-from kivymd.uix.boxlayout import MDBoxLayout
-
-class UpdateUserInfoScreen(MDScreen):
-    def __init__(self, user_data=None, **kwargs):
-        super().__init__(**kwargs)
-        self.user_data = user_data
-        self.account_number = None
-
-        # Main layout
-        self.layout = RelativeLayout()
-
-        logo = Image(
-            source='Pages/assets/Bank.png',
-            size_hint=(None, None),
-            size=(400, 400),
-            allow_stretch=True,
-            keep_ratio=False,
-            pos_hint={'center_x': 0.5 , 'top': 1}
-        )
-        self.layout.add_widget(logo)
+ACCENT_COLOR = (1, 1, 1, 1)  # White
+FONT_PATH = "D:\\Downloads\\BankLink\\Banklink_Desktop\\Pages\\assets\\Poppins-Bold.ttf"  # Poppins font path
 
 
-        # Phone/Mobile Row
-        self.changepasswordlayout = MDBoxLayout(
-            orientation="horizontal",
-            spacing=20,
-            size_hint=(0.8, None),
-            height=50,
-            pos_hint={'center_x': 0.5, 'top': 0.5}
-        )
-        self.changepasswordlayout.add_widget(MDRaisedButton(
-            text="Change Password",
-            md_bg_color=PRIMARY_COLOR,
-            text_color=ACCENT_COLOR,
-            on_release=self.go_to_user_info
-        ))
-        self.changepasswordlayout.add_widget(MDRaisedButton(
-            text=" Change Mobile ",
-            md_bg_color=PRIMARY_COLOR,
-            text_color=ACCENT_COLOR,
-            on_release=self.go_to_user_info
-        ))
-        self.layout.add_widget(self.changepasswordlayout)
+class UserInfoScreen(Screen):
+    def __init__(self, **kwargs):
+        super(UserInfoScreen, self).__init__(**kwargs)
+        self.user_id = None  # Will be set later
+        self.user_data = {}
 
-        # Name/Address Row
-        self.name_address_layout = MDBoxLayout(
-            orientation="horizontal",
-            spacing=20,
-            size_hint=(0.8, None),
-            height=50,
-            pos_hint={'center_x': 0.5, 'top': 0.4}
-        )
-        self.name_address_layout.add_widget(MDRaisedButton(
-            text="   Change Name    ",
-            md_bg_color=PRIMARY_COLOR,
-            text_color=ACCENT_COLOR,
-            on_release=self.go_to_user_info
-        ))
-        self.name_address_layout.add_widget(MDRaisedButton(
-            text="Change Address",
-            md_bg_color=PRIMARY_COLOR,
-            text_color=ACCENT_COLOR,
-            on_release=self.go_to_user_info
-        ))
-        self.layout.add_widget(self.name_address_layout)
+        layout = FloatLayout()
+
+        # Background
+        with layout.canvas.before:
+            Color(*ACCENT_COLOR)
+            self.rect = Rectangle(size=self.size, pos=self.pos)
+        self.bind(size=self._update_rect)
 
         # Back Button
-        self.back_btn = MDRaisedButton(
-            text="Back",
-            md_bg_color=PRIMARY_COLOR,
-            text_color=ACCENT_COLOR,
-            size_hint=(0.8, None),
-            height=50,
-            pos_hint={'center_x': 0.5, 'top': 0.3}
+        back_btn = MDIconButton(
+            icon="arrow-left",
+            theme_text_color="Custom",
+            text_color=PRIMARY_COLOR,
+            pos_hint={'x': 0.02, 'top': 0.98},
+            size_hint=(None, None),
+            size=(48, 48)
         )
-        self.back_btn.bind(on_release=self.go_back)
-        self.layout.add_widget(self.back_btn)
+        back_btn.bind(on_press=self.go_back)
+        layout.add_widget(back_btn)
 
-        self.add_widget(self.layout)
+        # User Icon Image
+        self.user_icon = Image(
+            source='Pages/assets/icons.png',
+            size_hint=(None, None),
+            size=(180, 180),
+            allow_stretch=True,
+            keep_ratio=False,
+            pos_hint={'center_x': 0.5, 'center_y': 0.75}
+        )
+        layout.add_widget(self.user_icon)
 
-    def set_account_number(self, account_number):
-        """Sets the account number for the screen."""
-        self.account_number = account_number
-        print(f"Account number set to: {self.account_number}")
+        # User Info Layout
+        self.info_layout = BoxLayout(
+            orientation='vertical',
+            spacing=15,
+            padding=[40, 20, 40, 20],
+            size_hint=(0.9, 0.35),
+            pos_hint={'center_x': 0.5, 'center_y': 0.45}
+        )
+        layout.add_widget(self.info_layout)
 
-    def go_to_user_info(self, instance):
-        self.manager.current = "user_info"
+        # Logout Button
+        logout_btn = MDRaisedButton(
+            text="LOGOUT",
+            size_hint=(0.6, None),
+            height=50,
+            md_bg_color=PRIMARY_COLOR,
+            pos_hint={'center_x': 0.5, 'y': 0.05},
+            font_size='18sp',
+            elevation=2
+        )
+        logout_btn.bind(on_press=self.logout)
+        layout.add_widget(logout_btn)
+
+        self.add_widget(layout)
+
+    def set_user_id(self, user_id):
+        """Set user ID dynamically and fetch data."""
+        self.user_id = user_id
+        self.fetch_user_data()
+
+    def fetch_user_data(self):
+        """Fetch user data from Firebase and update UI."""
+        if not self.user_id:
+            print("User ID not set.")
+            return
+
+        try:
+            user_ref = db.reference(f'users/{self.user_id}')
+            user_data = user_ref.get()
+
+            if user_data:
+                # Decrypt sensitive fields
+                user_data["mobile"] = decrypt_value(user_data.get("mobile", "N/A"))
+                user_data["account_number"] = decrypt_value(user_data.get("account_number", "N/A"))
+
+                self.user_data = user_data
+                self.update_user_info()
+            else:
+                print("User data not found.")
+        except Exception as e:
+            print(f"Error fetching user data: {e}")
+
+    def update_user_info(self):
+        """Update UI elements with user data."""
+        self.info_layout.clear_widgets()
+
+        fields = [
+            ("UserName", self.user_data.get('name', 'N/A')),
+            ("Mobile No", self.user_data.get('mobile', 'N/A')),
+            ("Account No", self.user_data.get('account_number', 'N/A')),
+            ("Address", self.user_data.get('address', 'N/A'))
+        ]
+
+        for label, value in fields:
+            self.info_layout.add_widget(Label(
+                text=f"[b]{label}:[/b] {value}",
+                markup=True,
+                font_size='18sp',
+                font_name=FONT_PATH,  # Apply Poppins font
+                color=TEXT_COLOR,
+                halign='left',
+                valign='middle',
+                size_hint_y=None,
+                height=40
+            ))
+
+    def _update_rect(self, instance, value):
+        self.rect.pos = instance.pos
+        self.rect.size = instance.size
 
     def go_back(self, instance):
-        self.manager.current = "dashboard"
+        """Navigate back to the dashboard screen."""
+        self.manager.current = 'dashboard'
+
+    def logout(self, instance):
+        """Handle logout and terminate session."""
+        from Pages.login import LoginScreen
+        from services.session_manager import clear_session  # Import clear_session
+
+        # Access the login screen and enable the login button
+        login_screen = self.manager.get_screen("login")
+        login_screen.enable_login_button()  # Assuming the method exists in LoginScreen
+
+        # Clear session data
+        clear_session()
+        print("Logged out successfully.")
+
+        self.manager.current = "login"

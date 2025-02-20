@@ -1,417 +1,235 @@
 from kivy.uix.screenmanager import Screen
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
-from kivy.uix.label import Label
+from kivymd.uix.boxlayout import MDBoxLayout
+from kivymd.uix.label import MDLabel
+from kivymd.uix.button import MDRaisedButton, MDIconButton
+from kivymd.uix.gridlayout import MDGridLayout
+from kivymd.uix.floatlayout import MDFloatLayout
+from kivymd.uix.button import MDRectangleFlatIconButton
 from kivy.uix.image import Image
-from kivymd.uix.button import MDIconButton
-from kivy.uix.floatlayout import FloatLayout
-from kivy.uix.gridlayout import GridLayout
-from kivy.core.window import Window
-from kivy.graphics import Color, Rectangle
+from kivy.uix.popup import Popup
 import pyqrcode
 import os
-from kivy.uix.popup import Popup
-from kivymd.uix.button import MDRaisedButton
-from kivy.graphics import Color, RoundedRectangle
-from kivymd.uix.button import MDRectangleFlatButton
-from Pages.user_info import UpdateUserInfoScreen
-from kivy.uix.screenmanager import ScreenManager
-from Pages.check_balance import CheckBalanceScreen
-from Pages.To_Mobile import MobilePaymentScreen
+from kivy.core.text import LabelBase
+import firebase_admin
+from firebase_admin import db
+from services.authentication import decrypt_value
+FONT_PATH = "D:\\Downloads\\BankLink\\Banklink_Desktop\\Pages\\assets\\Poppins-Bold.ttf"
+LabelBase.register(name="Poppins", fn_regular=FONT_PATH)
 
 
-Window.size = (360, 640)
-
-# Theme Colors
-PRIMARY_COLOR = (0.29, 0.0, 0.51, 1)  # Dark Purple
-SECONDARY_COLOR = (0.58, 0.44, 0.86, 1)  # Light Purple
-ACCENT_COLOR = (1, 1, 1, 1)  # White
-TEXT_COLOR = (0.2, 0.2, 0.2, 1)  # Dark Gray
-
+# Color Theme
+PRIMARY_COLOR = (0.29, 0.0, 0.51, 1)
+SECONDARY_COLOR = (0.58, 0.44, 0.86, 1)
+ACCENT_COLOR = (1, 1, 1, 1)
+TEXT_COLOR = (0.2, 0.2, 0.2, 1)
 
 class DashboardScreen(Screen):
-    def __init__(self, user_data, **kwargs):
+    def __init__(self, **kwargs):
         super(DashboardScreen, self).__init__(**kwargs)
-        self.user_data = user_data
-        self.qr_code_path = f"{self.user_data['account_number']}_qrcode.png"  # Define QR code path
-        self.generate_qr_code()  # Generate the QR code on initialization
-        layout = FloatLayout()
+        self.user_id = None
+        self.user_data = None
+        self.qr_code_path = ""
 
-        # White Background
-        with layout.canvas.before:
-            Color(*ACCENT_COLOR)
-            self.rect = Rectangle(size=self.size, pos=self.pos)
-        self.bind(size=self._update_rect)
+    def on_enter(self):
+        if self.user_id:
+            self.fetch_user_data()
+        else:
+            self.manager.current = "login"
 
-        # Top Bar with Logo and User Info
-        top_bar = BoxLayout(
-            orientation='horizontal',
-            size_hint=(1, 0.15),
-            pos_hint={'top': 1},
-            padding=[20, 10],
-            spacing=15
-        )
+    def fetch_user_data(self):
+        try:
+            user_ref = db.reference(f"users/{self.user_id}")
+            self.user_data = user_ref.get() or {"name": "Guest", "account_number": "000000"}
 
-        # App Logo and Title
-        logo_title = BoxLayout(orientation='vertical', spacing=0)
-        logo_title.add_widget(Label(
-            text="BankLink",
-            font_size=24,
-            color=PRIMARY_COLOR,
-            bold=True,
-            halign='left',
-            size_hint=(1, None),
-            height=30
-        ))
-        logo_title.add_widget(Label(
-            text=f"Welcome, {self.user_data['name']}",
-            font_size=16,
-            color=TEXT_COLOR,
-            halign='left',
-            size_hint=(1, None),
-            height=25
-        ))
+            # Decrypt the account number using authentication module
+            self.user_data["account_number"] = decrypt_value(self.user_data["account_number"])
 
-        # App Icon
-        icon = MDIconButton(
-            icon="bank",
-            theme_text_color="Custom",
-            text_color=PRIMARY_COLOR,
-            pos_hint={'center_y': 0.3},
-            size_hint=(None, None),
-            size=(48, 48),
-            on_press=self.switch_to_user_info
-        )
+            self.qr_code_path = f"{self.user_data['account_number']}_qrcode.png"
+            self.generate_qr_code()
+            self.build_ui()
+        except Exception:
+            self.user_data = {"name": "Guest", "account_number": "000000"}
+            self.build_ui()
 
+    def build_ui(self):
+        self.clear_widgets()
+        layout = MDFloatLayout(md_bg_color=ACCENT_COLOR)
+
+
+        # 🔹 **Top Bar**
+        top_bar = MDBoxLayout(orientation="horizontal", size_hint=(1, 0.12), padding=[20, 10], spacing=10, pos_hint={"top": 1})
+        icon = MDIconButton(icon="account-circle", icon_size="56sp", theme_text_color="Custom", text_color=PRIMARY_COLOR, size_hint_x=None, width=60, pos_hint={"center_y": 0.5})
+        icon.bind(on_press=self.open_user_info)
+        title = MDLabel(text=f"Welcome {self.user_data['name']} 👋! ", font_style="H5", halign="left", font_name="Poppins", theme_text_color="Custom", text_color=TEXT_COLOR, size_hint_x=0.8, valign="center")
         top_bar.add_widget(icon)
-        top_bar.add_widget(logo_title)
+        top_bar.add_widget(title)
         layout.add_widget(top_bar)
 
-        # Main Buttons Grid
-        buttons_grid = GridLayout(
-            cols=2,
-            spacing=15,
-            padding=[20, 0],
-            size_hint=(0.9, 0.4),
-            pos_hint={'center_x': 0.5, 'top': 0.8}
-        )
+        # 🔹 **Quick Actions Grid**
+        actions_grid = MDGridLayout(cols=2, spacing=15, size_hint=(0.9, None), height=150,
+                                    pos_hint={"center_x": 0.5, "top": 0.75})
 
         buttons = [
-            ("To Mobile", self.open_to_mobile),
-            ("To Bank/Account", self.open_to_bank),
-            ("Cheque Balance", self.open_cheque_balance),
-            ("Update Info", self.open_update_info)
+            ("To Mobile", "cellphone", "to_mobile"),
+            ("To Bank", "bank", "to_bank"),
+            ("Check Balance", "cash", "check_balance"),
+            ("Update Info", "account-edit", "update_info")
         ]
 
-        for text, callback in buttons:
-            btn = MDRectangleFlatButton(
+        for text, icon_name, screen in buttons:
+            btn = MDRectangleFlatIconButton(
                 text=text,
-                font_size=16,
+                icon=icon_name,
                 size_hint=(1, None),
-                height=70,
-                md_bg_color=PRIMARY_COLOR,
-                text_color=ACCENT_COLOR,
+                height=50,
+                theme_text_color="Custom",
+                text_color=(1, 1, 1, 1),
+                icon_color=(1, 1, 1, 1),
+                md_bg_color=PRIMARY_COLOR  # Keep the same background color
             )
+            btn.bind(on_press=lambda x, s=screen: setattr(self.manager, "current", s))
+            actions_grid.add_widget(btn)
 
-            # Custom rounded rectangle effect
-            with btn.canvas.before:
-                Color(rgba=PRIMARY_COLOR)
-                btn.rounded_rect = RoundedRectangle(
-                    pos=btn.pos,
-                    size=btn.size,
-                    radius=[70]
-                )
+        layout.add_widget(actions_grid)
 
-            def update_rounded_rect(instance, value):
-                instance.rounded_rect.pos = instance.pos
-                instance.rounded_rect.size = instance.size
-
-            btn.bind(pos=update_rounded_rect, size=update_rounded_rect)
-            btn.bind(on_press=callback)
-            buttons_grid.add_widget(btn)
-
-        layout.add_widget(buttons_grid)
-
-
-        # ID Button
-        id_button = Button(
+        # 🔹 **QR Code Button**
+        qr_button = MDRaisedButton(
+            icon="bank",
             text=f"{self.user_data['account_number']}@banklink",
             size_hint=(0.7, None),
-            height=45,
-            pos_hint={'center_x': 0.5, 'top': 0.6},
-            background_color=SECONDARY_COLOR,
-            color=ACCENT_COLOR,
-            font_size=14,
-            bold=True,
-            background_normal=''
+            height=50,
+            pos_hint={"center_x": 0.5, "top": 0.55},
+            md_bg_color=SECONDARY_COLOR,
+            text_color=ACCENT_COLOR,
         )
-        id_button.bind(on_press=self.show_qr_code)
-        layout.add_widget(id_button)
+        qr_button.bind(on_press=self.show_qr_code)
+        layout.add_widget(qr_button)
 
-        # Transaction Buttons Grid
-        transaction_grid = GridLayout(
-            cols=2,
-            spacing=10,
-            padding=[20, 10],
-            size_hint=(0.9, 0.2),
-            pos_hint={'center_x': 0.5, 'top': 0.50}
-        )
+        # 🔹 **Payment Methods**
+        payment_grid = MDGridLayout(cols=2, spacing=15, size_hint=(0.9, None), height=150,
+                                    pos_hint={"center_x": 0.5, "top": 0.4})
 
-        for text, callback in [("NEFT", self.open_neft), ("RTGS", self.open_rtgs),
-                               ("IMPS", self.open_imps), ("UPI", self.open_imps)]:
-            btn = Button(
+        payments = [
+            ("NEFT", "credit-card-fast", "neft"),
+            ("RTGS", "bank-transfer", "rtgs"),
+            ("IMPS", "transfer", "imps"),
+            ("UPI", "barcode", "upi")
+        ]
+
+        for text, icon_name, screen in payments:
+            btn = MDRectangleFlatIconButton(
                 text=text,
-                font_size=14,
-                bold=True,
-                background_color=PRIMARY_COLOR,
-                color=ACCENT_COLOR,
-                background_normal='',
-                size_hint=(1, 1)
+                icon=icon_name,
+                size_hint=(1, None),
+                height=50,
+                theme_text_color="Custom",
+                text_color=(1, 1, 1, 1),  # White text color for better contrast
+                icon_color=(1, 1, 1, 1),  # White icon color
+                md_bg_color=PRIMARY_COLOR  # Background color
             )
-            with btn.canvas.before:
-                Color(rgba=PRIMARY_COLOR)
-                btn.rounded_rect = RoundedRectangle(
-                    pos=btn.pos,
-                    size=btn.size,
-                    radius=[70]
-                )
+            btn.bind(on_press=lambda x, s=screen: setattr(self.manager, "current", s))
+            payment_grid.add_widget(btn)
 
-            def update_rounded_rect(instance, value):
-                instance.rounded_rect.pos = instance.pos
-                instance.rounded_rect.size = instance.size
+        layout.add_widget(payment_grid)
 
-            btn.bind(pos=update_rounded_rect, size=update_rounded_rect)
-            btn.bind(on_press=callback)
-            transaction_grid.add_widget(btn)
-
-        layout.add_widget(transaction_grid)
-
-        # Bottom Navigation
-        nav_grid = GridLayout(
-            cols=3,
-            spacing=10,
-            padding=[20, 10],
-            size_hint=(0.9, 0.1),
-            pos_hint={'center_x': 0.5, 'center_y': 0.20}
+        # 🔹 **Bottom Buttons (Scan & History)**
+        bottom_buttons = MDBoxLayout(size_hint=(1, 0.15), spacing=20, padding=[20, 10], pos_hint={"bottom": 3})
+        scan_btn = MDRaisedButton(
+            text="Scan",
+            size_hint=(0.4, None),
+            height=50,
+            md_bg_color=PRIMARY_COLOR,
+            icon="qrcode-scan"
         )
+        scan_btn.bind(on_press=self.scan_qr_code)
 
-        for text, callback in [("Home", self.open_dashboard), ("Scan", self.open_qr_scanner),
-                               ("History", self.open_transactions)]:
-            btn = Button(
-                text=text,
-                font_size=14,
-                bold=True,
-                background_color=PRIMARY_COLOR,
-                color=ACCENT_COLOR,
-                background_normal='',
-                size_hint=(1, 1)
-            )
-            with btn.canvas.before:
-                Color(rgba=PRIMARY_COLOR)
-                btn.rounded_rect = RoundedRectangle(
-                    pos=btn.pos,
-                    size=btn.size,
-                    radius=[70]
-                )
+        history_btn = MDRaisedButton(
+            text="History",
+            size_hint=(0.4, None),
+            height=50,
+            md_bg_color=PRIMARY_COLOR,
+            icon="history"
+        )
+        history_btn.bind(on_press=self.open_transaction_history)
 
-            def update_rounded_rect(instance, value):
-                instance.rounded_rect.pos = instance.pos
-                instance.rounded_rect.size = instance.size
+        bottom_buttons.add_widget(scan_btn)
+        bottom_buttons.add_widget(history_btn)
+        layout.add_widget(bottom_buttons)
 
-            btn.bind(pos=update_rounded_rect, size=update_rounded_rect)
-            btn.bind(on_press=callback)
-            nav_grid.add_widget(btn)
-
-        layout.add_widget(nav_grid)
         self.add_widget(layout)
 
-    def generate_qr_code(self):
-        """Generate a QR code for the user's account if not already created."""
-        if not os.path.exists(self.qr_code_path):
-            qr = pyqrcode.create(self.user_data['account_number'])
-            qr.png(self.qr_code_path, scale=6)
-            print(f"QR Code generated: {self.qr_code_path}")
+    def scan_qr_code(self, instance):
+        """ Open QR Code Scanner """
+        self.manager.current = "QR_Scanner"
+
+    def open_transaction_history(self, instance):
+        """ Open Transaction History Screen """
+        self.manager.current = "transaction_history"
 
     def show_qr_code(self, instance):
-        """Display the QR code in a popup."""
-        self.generate_qr_code()  # Ensure QR code is generated before showing
+        self.generate_qr_code()
 
-        popup_layout = BoxLayout(orientation='vertical', padding=20, spacing=10)
+        # Extract last 4 digits of account number
+        last_four_digits = self.user_data["account_number"][-4:]
+        account_text = f"BankLink@{last_four_digits}"
 
+        # Create a layout for the popup
+        popup_layout = MDBoxLayout(
+            orientation="vertical",
+            padding=20,
+            spacing=10,
+            md_bg_color=(1, 1, 1, 1)  # White background
+        )
+
+        # QR Code Image
         qr_image = Image(source=self.qr_code_path, size_hint=(1, 1))
-        close_button = Button(
+
+        # Label for account number
+        acc_label = MDLabel(
+            text=account_text,
+            font_style="H6",
+            halign="center",
+            theme_text_color="Custom",
+            text_color=(0.2, 0.2, 0.2, 1)  # Dark text for contrast
+        )
+
+        # Close button
+        close_button = MDRaisedButton(
             text="Close",
             size_hint=(1, None),
             height=40,
-            background_color=PRIMARY_COLOR,
-            color=ACCENT_COLOR
+            md_bg_color=(0.29, 0.0, 0.51, 1)  # Primary color
         )
 
+        # Add widgets to layout
         popup_layout.add_widget(qr_image)
+        popup_layout.add_widget(acc_label)
         popup_layout.add_widget(close_button)
 
+        # Create the popup with a white background
         popup = Popup(
             title="Your QR Code",
             content=popup_layout,
-            size_hint=(0.8, 0.6)
+            size_hint=(0.8, 0.6),
+            background="assets/white_bg.png",  # A plain white background image (optional)
+            separator_color=(0.8, 0.8, 0.8, 1)  # Light grey separator
         )
+
         close_button.bind(on_press=popup.dismiss)
         popup.open()
 
-    def switch_to_user_info(self, instance):
-        """Switch to User Info Screen"""
-        if self.manager.has_screen('user_info'):
-            self.manager.remove_widget(self.manager.get_screen('user_info'))
+    def generate_qr_code(self):
+        if not os.path.exists(self.qr_code_path):
+            qr = pyqrcode.create(self.user_data["account_number"])
+            qr.png(self.qr_code_path, scale=6)
 
-        user_info_screen = UserInfoScreen(user_data=self.user_data, name='user_info')
-        self.manager.add_widget(user_info_screen)
-        self.manager.current = 'user_info'
-
-    def _update_rect(self, instance, value):
-        self.rect.pos = instance.pos
-        self.rect.size = instance.size
-
-    def open_to_mobile(self, instance):
-        """Navigate to the Mobile Payment Screen."""
-        if not self.manager.has_screen("mobile_payment"):
-            mobile_payment_screen = MobilePaymentScreen(name="mobile_payment")
-            self.manager.add_widget(mobile_payment_screen)
-
-        self.manager.current = "mobile_payment"
-    def open_to_bank(self, instance):
-        print("Navigating to Bank Transfer...")
-
-    def open_cheque_balance(self, instance):
-        """Navigate to Check Balance Screen"""
-        if not self.manager.has_screen("check_balance"):
-            check_balance_screen = CheckBalanceScreen(user_data=self.user_data, name="check_balance")
-            self.manager.add_widget(check_balance_screen)
-
-        self.manager.current = "check_balance"
-    def open_update_info(self, instance):
-        print("Opening Update Info...")
-
-        # Check if the screen already exists
-        if not self.manager.has_screen("update_user_info"):
-            # Create the screen instance and add it to the manager
-            update_info_screen = UpdateUserInfoScreen(user_data=self.user_data, name="update_user_info")
-            self.manager.add_widget(update_info_screen)
-
-        # Get the screen and set the account number
-        update_info_screen = self.manager.get_screen("update_user_info")
-        update_info_screen.set_account_number(self.user_data['account_number'])
-
-        # Switch to the screen
-        self.manager.current = "update_user_info"
-
-    def open_neft(self, instance):
-        print("NEFT Transaction...")
-
-    def open_rtgs(self, instance):
-        print("RTGS Transaction...")
-
-    def open_imps(self, instance):
-        print("IMPS Transaction...")
-
-    def open_dashboard(self, instance):
-        print("Going to Dashboard...")
-
-    def open_qr_scanner(self, instance):
-        print("Opening QR Scanner...")
-
-    def open_transactions(self, instance):
-        print("Showing Transaction History...")
+    def open_user_info(self, instance):
+        if self.user_id:
+            user_info_screen = self.manager.get_screen('user_info')
+            user_info_screen.set_user_id(self.user_id)
+            self.manager.current = "user_info"
+        else:
+            print("User ID not found! Redirecting to login.")
+            self.manager.current = "login"
 
 
-class UserInfoScreen(Screen):
-    def __init__(self, user_data, **kwargs):
-        super(UserInfoScreen, self).__init__(**kwargs)
-        self.user_data = user_data
-        layout = FloatLayout()
-
-        # Background
-        with layout.canvas.before:
-            Color(*ACCENT_COLOR)
-            self.rect = Rectangle(size=self.size, pos=self.pos)
-        self.bind(size=self._update_rect)
-
-        # Back Button
-        back_btn = MDIconButton(
-            icon="arrow-left",
-            theme_text_color="Custom",
-            text_color=PRIMARY_COLOR,
-            pos_hint={'x': 0.02, 'top': 0.98},
-            size_hint=(None, None),
-            size=(48, 48)
-        )
-        back_btn.bind(on_press=self.go_back)
-        layout.add_widget(back_btn)
-
-        UserIconImage= Image(
-            source='Pages/assets/icons.png',
-            size_hint=(None, None),
-            size=(250, 250),
-            allow_stretch=True,
-            keep_ratio=False,
-            pos_hint={'center_x': 0.5 , 'center_y': 0.75}
-        )
-        layout.add_widget(UserIconImage)
-
-        # User Info
-        info_layout = BoxLayout(
-            orientation='vertical',
-            spacing=20,
-            padding=[40, 20, 40, 20],
-            size_hint=(0.9, 0.7),
-            pos_hint={'center': (0.5, 0.55)}
-        )
-
-        # Field order and labels matched to image
-        fields = [
-            ("UserName", self.user_data['name']),
-            ("Mobile No", self.user_data['mobile']),
-            ("Account No", self.user_data['account_number']),
-            ("Adddres", self.user_data['address'])
-        ]
-
-        for label, value in fields:
-            info_layout.add_widget(Label(
-                text=f"[b]{label}:[/b] {value}",
-                markup=True,
-                font_size='20sp',
-                color=TEXT_COLOR,
-                halign='left',
-                valign='middle',
-                size_hint_y=None,
-                height=40
-            ))
-
-        layout.add_widget(info_layout)
-
-        # Logout Button
-        logout_btn = MDRaisedButton(
-            text="LOGOUT",
-            size_hint=(0.7, None),
-            height=50,
-            md_bg_color=PRIMARY_COLOR,
-            pos_hint={'center_x': 0.5, 'y': 0.05},
-            font_size='18sp',
-            elevation=0
-        )
-
-        logout_btn.bind(on_press=self.logout)
-        layout.add_widget(logout_btn)
-
-        self.add_widget(layout)
-
-    def _update_rect(self, instance, value):
-        self.rect.pos = instance.pos
-        self.rect.size = instance.size
-
-
-    def go_back(self, instance):
-        self.manager.current = 'dashboard'
-
-    def logout(self, instance):
-        """Handle the logout process"""
-        self.manager.current = 'login'

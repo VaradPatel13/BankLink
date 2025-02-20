@@ -3,19 +3,30 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
-from kivy.uix.image import Image
-from kivy.core.window import Window
 from kivy.uix.floatlayout import FloatLayout
 from kivy.uix.popup import Popup
-from database import add_user
+from kivy.graphics import Color, Rectangle
+from kivy.core.text import LabelBase
 import random
 import time
+import re
+import bcrypt
+from cryptography.fernet import Fernet
+from services.firebase_config import register_user, store_user_details
 
-# Theme colors
-PRIMARY_COLOR = (0.29, 0.0, 0.51, 1)
-SECONDARY_COLOR = (0.58, 0.44, 0.86, 1)
-ACCENT_COLOR = (1, 1, 1, 1)
-TEXT_COLOR = (0.2, 0.2, 0.2, 1)
+# Register Poppins Font
+LabelBase.register(name="Poppins", fn_regular="D:\\Downloads\\BankLink\\Banklink_Desktop\\Pages\\assets\\Poppins-SemiBold.ttf")
+
+# Define theme colors
+PRIMARY_COLOR = (0.29, 0.0, 0.51, 1)  # Dark Purple
+ACCENT_COLOR = (1, 1, 1, 1)  # White
+TEXT_COLOR = (0.2, 0.2, 0.2, 1)  # Dark Gray
+BUTTON_COLOR = PRIMARY_COLOR  # Uniform Button Color
+
+# Encryption Key (store this securely, do not regenerate each time)
+ENCRYPTION_KEY = b'fTvxVcDZNOYAmt1D33OUwkFBdibYi_F0tN6Y_lOQTAk='
+cipher_suite = Fernet(ENCRYPTION_KEY)
+
 
 class CreateAccountScreen(Screen):
     def __init__(self, **kwargs):
@@ -27,202 +38,182 @@ class CreateAccountScreen(Screen):
     def create_layout(self):
         layout = FloatLayout()
 
-        # Background Image
-        background = Image(source='assets/background.jpg', allow_stretch=True, keep_ratio=False)
-        layout.add_widget(background)
-
-        # Bank Logo
-        bank_logo = Image(source='assets/bank.png', size_hint=(0.2, 0.2), pos_hint={'center_x': 0.5, 'top': 0.95})
-        layout.add_widget(bank_logo)
+        # Background Color
+        with layout.canvas.before:
+            Color(0.95, 0.95, 0.95, 1)  # Light Gray Background
+            self.rect = Rectangle(size=self.size, pos=self.pos)
+            layout.bind(size=self.update_rect, pos=self.update_rect)
 
         # Input fields container
-        input_layout = BoxLayout(orientation='vertical', spacing=15, padding=30,
-                                 size_hint=(0.9, 0.8), pos_hint={'center_x': 0.5, 'center_y': 0.5})
-
-        # Full Name Input
-        self.name_input = TextInput(
-            hint_text="Full Name",
-            size_hint=(1, None),
-            height=50,
-            background_normal='',
-            background_active='',
-            background_color=ACCENT_COLOR,
-            foreground_color=TEXT_COLOR,
-            padding=10,
-            font_size=16
+        input_layout = BoxLayout(
+            orientation='vertical',
+            spacing=14,
+            padding=25,
+            size_hint=(0.9, 0.8),
+            pos_hint={'center_x': 0.5, 'center_y': 0.5}
         )
+
+        # Title Label
+        title_label = Label(
+            text="Create New Account",
+            font_size=26,
+            font_name="Poppins",
+            bold=True,
+            color=PRIMARY_COLOR,
+            size_hint=(1, None),
+            height=50
+        )
+        input_layout.add_widget(title_label)
+
+        # Input Fields
+        self.name_input = self.create_text_input("Full Name")
+        self.mobile_input = self.create_text_input("Mobile Number")
+        self.email_input = self.create_text_input("Email")
+        self.address_input = self.create_text_input("Address")
+        self.otp_input = self.create_text_input("Enter OTP")
+        self.password_input = self.create_text_input("Password", password=True)
+        self.confirm_password_input = self.create_text_input("Confirm Password", password=True)
+
         input_layout.add_widget(self.name_input)
-
-        # Address Input
-        self.address_input = TextInput(
-            hint_text="Address",
-            size_hint=(1, None),
-            height=50,
-            background_normal='',
-            background_active='',
-            background_color=ACCENT_COLOR,
-            foreground_color=TEXT_COLOR,
-            padding=10,
-            font_size=16
-        )
-        input_layout.add_widget(self.address_input)
-
-        # Mobile Number Input
-        self.mobile_input = TextInput(
-            hint_text="Mobile Number",
-            size_hint=(1, None),
-            height=50,
-            background_normal='',
-            background_active='',
-            background_color=ACCENT_COLOR,
-            foreground_color=TEXT_COLOR,
-            padding=10,
-            font_size=16
-        )
         input_layout.add_widget(self.mobile_input)
-
-        # OTP Input
-        self.otp_input = TextInput(
-            hint_text="Enter OTP",
-            size_hint=(1, None),
-            height=50,
-            background_normal='',
-            background_active='',
-            background_color=ACCENT_COLOR,
-            foreground_color=TEXT_COLOR,
-            padding=10,
-            font_size=16
-        )
+        input_layout.add_widget(self.email_input)
+        input_layout.add_widget(self.address_input)
         input_layout.add_widget(self.otp_input)
 
         # Send OTP Button
-        send_otp_button = Button(
-            text="Send OTP",
-            size_hint=(1, None),
-            height=50,
-            background_normal='',
-            background_color=SECONDARY_COLOR,
-            color=ACCENT_COLOR,
-            font_size=18,
-            bold=True
-        )
+        send_otp_button = self.create_button("Send OTP")
         send_otp_button.bind(on_press=self.send_otp)
         input_layout.add_widget(send_otp_button)
 
-        # Password Input
-        self.password_input = TextInput(
-            hint_text="Password",
-            size_hint=(1, None),
-            height=50,
-            background_normal='',
-            background_active='',
-            background_color=ACCENT_COLOR,
-            foreground_color=TEXT_COLOR,
-            padding=10,
-            font_size=16,
-            password=True
-        )
         input_layout.add_widget(self.password_input)
-
-        # Initial Amount Input
-        self.amount_input = TextInput(
-            hint_text="Initial Amount",
-            size_hint=(1, None),
-            height=50,
-            background_normal='',
-            background_active='',
-            background_color=ACCENT_COLOR,
-            foreground_color=TEXT_COLOR,
-            padding=10,
-            font_size=16
-        )
-        input_layout.add_widget(self.amount_input)
+        input_layout.add_widget(self.confirm_password_input)
 
         # Create Account Button
-        create_button = Button(
-            text="Create Account",
-            size_hint=(1, None),
-            height=50,
-            background_normal='',
-            background_color=PRIMARY_COLOR,
-            color=ACCENT_COLOR,
-            font_size=18,
-            bold=True
-        )
+        create_button = self.create_button("Create Account")
         create_button.bind(on_press=self.create_account)
         input_layout.add_widget(create_button)
 
-        # Back Button (below Create Account button)
-        back_button = Button(
-            text="Back",
-            size_hint=(1, None),
-            height=50,
-            background_normal='',
-            background_color=PRIMARY_COLOR,
-            color=ACCENT_COLOR,
-            font_size=18,
-            bold=True
-        )
-        back_button.bind(on_press=self.go_back)
+        # Back Button
+        back_button = self.create_button("Back to Login")
+        back_button.bind(on_press=self.go_to_login)
         input_layout.add_widget(back_button)
 
         layout.add_widget(input_layout)
         self.add_widget(layout)
 
-    def go_back(self, instance):
-        """Navigate to login screen"""
-        self.manager.current = 'login'
+    def create_text_input(self, hint_text, password=False):
+        """Creates a styled text input field."""
+        return TextInput(
+            hint_text=hint_text,
+            size_hint=(1, None),
+            height=55,
+            font_size=17,
+            font_name="Poppins",
+            password=password,
+            background_active='',
+            background_normal='',
+            background_color=(1, 1, 1, 1),
+            foreground_color=TEXT_COLOR,
+            padding=(12, 12),
+            cursor_color=PRIMARY_COLOR
+        )
+
+    def create_button(self, text):
+        """Creates a styled button with the same color."""
+        return Button(
+            text=text,
+            size_hint=(1, None),
+            height=55,
+            font_size=18,
+            font_name="Poppins",
+            background_normal='',
+            background_color=BUTTON_COLOR,
+            color=ACCENT_COLOR,
+            bold=True
+        )
 
     def send_otp(self, instance):
-        mobile = self.mobile_input.text
-        if mobile:
-            self.otp = str(random.randint(100000, 999999))
-            self.otp_sent_time = time.time()
-            # Here you would integrate with an SMS gateway to send the OTP
-            print(f"OTP sent to {mobile}: {self.otp}")
-            self.show_error_popup("OTP Sent", f"OTP has been sent to {mobile}")
-        else:
-            self.show_error_popup("Error", "Please enter a valid mobile number.")
+        """Generates and sends OTP to the user's mobile number."""
+        mobile = self.mobile_input.text.strip()
+        if not re.match(r'^\d{10}$', mobile):
+            self.show_popup("Error", "Enter a valid 10-digit mobile number.")
+            return
+
+        self.otp = str(random.randint(100000, 999999))
+        self.otp_sent_time = time.time()
+        print(f"OTP sent to {mobile}: {self.otp}")
+        self.show_popup("OTP Sent", f"OTP has been sent to {mobile}")
 
     def create_account(self, instance):
+        """Handles account creation with validation and Firebase integration."""
         name = self.name_input.text.strip()
-        address = self.address_input.text.strip()
         mobile = self.mobile_input.text.strip()
-        password = self.password_input.text.strip()
+        email = self.email_input.text.strip()
+        address = self.address_input.text.strip()
         otp = self.otp_input.text.strip()
-        initial_amount = self.amount_input.text.strip()
+        password = self.password_input.text.strip()
+        confirm_password = self.confirm_password_input.text.strip()
 
-        if not (name and address and mobile and password and otp and initial_amount):
-            self.show_error_popup("Error", "Please fill in all fields.")
+        # Field Validations
+        if not name:
+            self.show_popup("Error", "Please enter your full name.")
+            return
+        if not re.match(r'^\d{10}$', mobile):
+            self.show_popup("Error", "Enter a valid 10-digit mobile number.")
+            return
+        if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email):
+            self.show_popup("Error", "Enter a valid email address.")
+            return
+        if not address:
+            self.show_popup("Error", "Please enter your address.")
+            return
+        if otp != self.otp or time.time() - self.otp_sent_time > 900:
+            self.show_popup("Error", "Invalid or expired OTP.")
+            return
+        if len(password) < 6:
+            self.show_popup("Error", "Password must be at least 6 characters.")
+            return
+        if password != confirm_password:
+            self.show_popup("Error", "Passwords do not match.")
             return
 
-        if not initial_amount.isdigit() or float(initial_amount) < 0:
-            self.show_error_popup("Error", "Initial amount must be a valid number.")
+        # Encrypt mobile number & Generate encrypted account number
+        encrypted_mobile = cipher_suite.encrypt(mobile.encode()).decode()
+        account_number = str(random.randint(1000000000, 9999999999))
+        encrypted_account = cipher_suite.encrypt(account_number.encode()).decode()
+
+        # Hash password
+        hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+        # Register user in Firebase
+        uid = register_user(email, hashed_password)
+        if not uid:
+            self.show_popup("Error", "User already exists or registration failed.")
             return
 
-        if not self.otp or otp != self.otp or time.time() - self.otp_sent_time > 900:  # OTP valid for 15 min
-            self.show_error_popup("Error", "Invalid or expired OTP.")
-            return
+        # Store user details in Firebase
+        success = store_user_details(uid, email, name, address, mobile, 1000.0, account_number, hashed_password)
 
-        # Convert initial amount to float
-        initial_amount = float(initial_amount)
-
-        # Add user to database
-        account_number = add_user(name, address, mobile, password, initial_amount)
-
-        if account_number:
-            print(f"Account created successfully! Account Number: {account_number}")
-            self.show_error_popup("Success", f"Account created! Your Account Number: {account_number}")
+        if success:
+            self.show_popup("Success", f"Account created!\nYour Account Number: {account_number}")
             self.manager.current = 'login'
         else:
-            self.show_error_popup("Error", "Mobile number already registered. Try again.")
+            self.show_popup("Error", "Failed to store user details. Try again.")
 
-    def show_error_popup(self, title, message):
+    def go_to_login(self, instance):
+        """Navigates back to the Login screen."""
+        self.manager.current = 'login'
+
+    def show_popup(self, title, message):
+        """Displays a popup with a message."""
         popup = Popup(
             title=title,
-            size_hint=(0.8, 0.4),
-            content=Label(text=message, font_size=16, color=TEXT_COLOR),
-            separator_height=0,
-            background_color=SECONDARY_COLOR
+            content=Label(text=message, font_name="Poppins", color=TEXT_COLOR),
+            size_hint=(0.8, 0.4)
         )
         popup.open()
+
+    def update_rect(self, instance, value):
+        """Updates background size when the window resizes."""
+        self.rect.pos = instance.pos
+        self.rect.size = instance.size
