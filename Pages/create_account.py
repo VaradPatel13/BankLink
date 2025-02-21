@@ -15,7 +15,7 @@ from cryptography.fernet import Fernet
 from services.firebase_config import register_user, store_user_details
 
 # Register Poppins Font
-LabelBase.register(name="Poppins", fn_regular="D:\\Downloads\\BankLink\\Banklink_Desktop\\Pages\\assets\\Poppins-SemiBold.ttf")
+LabelBase.register(name="Poppins", fn_regular="D:\\Downloads\\BankLink\\Banklink_Desktop\\Pages\\assets\\Fonts\\Poppins-Bold.ttf")
 
 # Define theme colors
 PRIMARY_COLOR = (0.29, 0.0, 0.51, 1)  # Dark Purple

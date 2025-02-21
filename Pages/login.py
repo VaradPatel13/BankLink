@@ -49,7 +49,7 @@ class LoginScreen(Screen):
 
         # Logo
         logo = Image(
-            source='Pages/assets/Bank.png',
+            source='Pages/assets/Images/Bank.png',
             size_hint=(None, None),
             size=(400, 400),
             allow_stretch=True,

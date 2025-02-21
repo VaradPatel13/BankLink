@@ -24,9 +24,9 @@ class BankLinkApp(MDApp):
         screen_manager.add_widget(DashboardScreen(name='dashboard'))
         # screen_manager.add_widget(PaymentScreen(name='payment'))
         screen_manager.add_widget(UserInfoScreen(name='user_info'))
-        # screen_manager.add_widget(UpdateUserInfoScreen(name='update_user_info'))
+        screen_manager.add_widget(UpdateUserInfoScreen(name='update_user_info'))
         screen_manager.add_widget(ForgotPasswordScreen(name='forgot_password'))
-        # screen_manager.add_widget(MobilePaymentScreen(name='mobile_payment', user_id = user_id))
+        # screen_manager.add_widget(MobilePaymentScreen(name='mobile_payment'))
         # screen_manager.add_widget(CheckBalanceScreen(name='Check_Balance', user_id = user_id))
         screen_manager.add_widget(QRScannerScreen(name='QR_Scanner'))
 

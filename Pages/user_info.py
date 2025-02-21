@@ -13,7 +13,7 @@ from services.session_manager import clear_session
 PRIMARY_COLOR = (0.29, 0.0, 0.51, 1)  # Dark Purple
 TEXT_COLOR = (0.2, 0.2, 0.2, 1)  # Dark Gray
 ACCENT_COLOR = (1, 1, 1, 1)  # White
-FONT_PATH = "D:\\Downloads\\BankLink\\Banklink_Desktop\\Pages\\assets\\Poppins-Bold.ttf"  # Poppins font path
+FONT_PATH = "D:\\Downloads\\BankLink\\Banklink_Desktop\\Pages\\assets\\Fonts\\Poppins-Bold.ttf"  # Poppins font path
 
 
 class UserInfoScreen(Screen):
@@ -44,7 +44,7 @@ class UserInfoScreen(Screen):
 
         # User Icon Image
         self.user_icon = Image(
-            source='Pages/assets/icons.png',
+            source='Pages/assets/Images/icons.png',
             size_hint=(None, None),
             size=(180, 180),
             allow_stretch=True,

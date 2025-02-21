@@ -40,7 +40,7 @@ class CheckBalanceScreen(Screen):
             self.circle = Ellipse(pos=checkmark_container.pos, size=checkmark_container.size)
 
         checkmark_image = Image(
-            source="Pages/assets/checkmark.png",
+            source="Pages/assets/Images/checkmark.png",
             size_hint=(None, None),
             size=(120, 120),
             pos_hint={"center_x": 0.5, "center_y": 0.5}
