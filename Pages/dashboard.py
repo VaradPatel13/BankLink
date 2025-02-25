@@ -18,7 +18,7 @@ from kivymd.uix.bottomnavigation import MDBottomNavigation, MDBottomNavigationIt
 from kivy.core.text import LabelBase
 
 
-FONT_PATH = "D:\\Downloads\\BankLink\\Banklink_Desktop\\Pages\\assets\\Poppins-Bold.ttf"
+FONT_PATH = "D:\\Downloads\\BankLink\\Banklink_Desktop\\Pages\\assets\\Fonts\\Poppins-Bold.ttf"
 LabelBase.register(name="Poppins", fn_regular=FONT_PATH)
 
 # Color Theme
@@ -98,12 +98,11 @@ class DashboardScreen(Screen):
                                     pos_hint={"center_x": 0.5, "top": 0.75})
 
         buttons = [
-            ("To Mobile", "cellphone", "To_Mobile"),
-            ("To Bank", "bank", "to_bank"),
-            ("Check Balance", "cash", "check_balance"),
-            ("Update Info", "account-edit", "update_info")
+            ("To Mobile", "cellphone", "mobile_payment"),
+            ("To Bank", "bank", "account_payment"),
+            ("Check Balance", "cash", "Check_Balance"),
+            ("Update Info", "account-edit", "update_user_info")
         ]
-
         for text, icon_name, screen in buttons:
             btn = MDFillRoundFlatIconButton(
                 text=text,
@@ -115,7 +114,8 @@ class DashboardScreen(Screen):
                 icon_color=WHITE_COLOR,
                 md_bg_color=PRIMARY_COLOR
             )
-            btn.bind(on_press=lambda x, s=screen: setattr(self.manager, "current", s))
+            btn.bind(on_press=lambda x, s=screen: self.switch_screen(s, self.user_id))
+
             actions_grid.add_widget(btn)
 
         layout.add_widget(actions_grid)
@@ -125,22 +125,48 @@ class DashboardScreen(Screen):
             text=f"{self.user_data['account_number']}@banklink",
             size_hint=(0.7, None),
             height=50,
-            pos_hint={"center_x": 0.5, "top": 0.55},
+            pos_hint={"center_x": 0.5, "top": 0.52},
             md_bg_color=SECONDARY_COLOR,
             text_color=ACCENT_COLOR,
         )
         qr_button.bind(on_press=self.show_qr_code)
         layout.add_widget(qr_button)
 
+        # Rewards, Offers, and Referrals Buttons
+        extra_buttons_grid = MDGridLayout(cols=3, spacing=10, size_hint=(0.9, None), height=50,
+                                          pos_hint={"center_x": 0.5, "top": 0.39})
+
+        extra_buttons = [
+            ("Rewards", "gift", self.show_rewards),
+            ("Offers", "tag", self.show_offers),
+            ("Referrals", "account-multiple", self.show_referrals)
+        ]
+
+        for text, icon_name, callback in extra_buttons:
+            btn = MDFillRoundFlatIconButton(
+                text=text,
+                icon=icon_name,
+                size_hint=(1, None),
+                height=50,
+                theme_text_color="Custom",
+                text_color=WHITE_COLOR,
+                icon_color=WHITE_COLOR,
+                md_bg_color=PRIMARY_COLOR
+            )
+            btn.bind(on_press=callback)
+            extra_buttons_grid.add_widget(btn)
+
+        layout.add_widget(extra_buttons_grid)
+
         # PAYMENT METHODS GRID
         payment_grid = MDGridLayout(cols=2, spacing=15, size_hint=(0.9, None), height=150,
                                     pos_hint={"center_x": 0.5, "bottom": 2})
 
         payments = [
-            ("NEFT", "credit-card-fast", "neft"),
-            ("RTGS", "bank-transfer", "rtgs"),
-            ("IMPS", "transfer", "imps"),
-            ("UPI", "barcode", "upi")
+            ("NEFT", "credit-card-fast", "fund_transfer"),
+            ("RTGS", "bank-transfer", "fund_transfer"),
+            ("IMPS", "transfer", "fund_transfer"),
+            ("UPI", "barcode", "mobile_payment")
         ]
 
         for text, icon_name, screen in payments:
@@ -154,7 +180,7 @@ class DashboardScreen(Screen):
                 icon_color=WHITE_COLOR,
                 md_bg_color=PRIMARY_COLOR
             )
-            btn.bind(on_press=lambda x, s=screen: setattr(self.manager, "current", s))
+            btn.bind(on_press=lambda x, s=screen: self.switch_screen(s, self.user_id))
             payment_grid.add_widget(btn)
 
         layout.add_widget(payment_grid)
@@ -167,7 +193,7 @@ class DashboardScreen(Screen):
         # HOME TAB
         home_tab = MDBottomNavigationItem(
             name="home", text="Home", icon="home",
-            on_tab_press=lambda instance: self.switch_screen("dashboard"),
+            on_tab_press=lambda instance: self.switch_screen("dashboard", self.user_id)
         )
         home_tab.theme_text_color = "Custom"
         home_tab.text_color = PRIMARY_COLOR
@@ -176,7 +202,7 @@ class DashboardScreen(Screen):
         # SCAN TAB
         scan_tab = MDBottomNavigationItem(
             name="scan", text="Scan", icon="qrcode-scan",
-            on_tab_press=lambda instance: self.switch_screen("QR_Scanner"),
+            on_tab_press=lambda instance: self.switch_screen("QR_Scanner", self.user_id),
         )
         scan_tab.theme_text_color = "Custom"
         scan_tab.text_color = PRIMARY_COLOR
@@ -184,7 +210,7 @@ class DashboardScreen(Screen):
         # HISTORY TAB
         history_tab = MDBottomNavigationItem(
             name="history", text="History", icon="history",
-            on_tab_press=lambda instance: self.switch_screen("transaction_history"),
+            on_tab_press=lambda instance: self.switch_screen("transaction_history", self.user_id),
         )
         history_tab.theme_text_color = "Custom"
         history_tab.text_color = PRIMARY_COLOR
@@ -196,13 +222,13 @@ class DashboardScreen(Screen):
 
         self.add_widget(bottom_nav)
 
-    def switch_screen(self, screen_name):
-        """ Switch screens when a navigation button is clicked. """
-        if screen_name in self.manager.screen_names:
-            print(f"Switching to {screen_name}")
-            self.manager.current = screen_name
-        else:
-            print(f"Screen '{screen_name}' not found!")
+    # def switch_screen_main(self, screen_name):
+    #     """ Switch screens when a navigation button is clicked. """
+    #     if screen_name in self.manager.screen_names:
+    #         print(f"Switching to {screen_name}")
+    #         self.manager.current = screen_name
+    #     else:
+    #         print(f"Screen '{screen_name}' not found!")
 
     def show_qr_code(self, instance):
         self.generate_qr_code()
@@ -269,5 +295,35 @@ class DashboardScreen(Screen):
         else:
             print("User ID not found! Redirecting to login.")
             self.manager.current = "login"
+
+    def open_more_options(self, instance):
+        """ Function for handling Extended FAB click """
+        print("More options clicked!")
+
+    def show_rewards(self, instance):
+        """ Function to display rewards page or popup """
+        print("Showing Rewards")
+
+    def show_offers(self, instance):
+        """ Function to display offers page or popup """
+        print("Showing Offers")
+
+    def show_referrals(self, instance):
+        """ Function to display referrals page or popup """
+        print("Showing Referrals")
+
+    def switch_screen(self, screen_name, user_id):
+        print(f"Switching to {screen_name} with User ID: {user_id}")  # Debugging
+        if screen_name in self.manager.screen_names:
+            print("user_id: ", user_id)
+            target_screen = self.manager.get_screen(screen_name)
+            if hasattr(target_screen, "set_user_id"):
+                target_screen.set_user_id(user_id)
+            self.manager.current = screen_name
+        else:
+            print(f"Screen '{screen_name}' not found!")
+
+
+
 
 

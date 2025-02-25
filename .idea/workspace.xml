@@ -4,7 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ed3f9137-9a9d-43dd-8b1d-6046720ff67c" name="Changes" comment="" />
+    <list default="true" id="ed3f9137-9a9d-43dd-8b1d-6046720ff67c" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/BankLink/Pages/dashboard.py" beforeDir="false" afterPath="$PROJECT_DIR$/BankLink/Pages/dashboard.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BankLink/Pages/ui/screens/qr_scanner_screen.py" beforeDir="false" afterPath="$PROJECT_DIR$/BankLink/Pages/ui/screens/qr_scanner_screen.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BankLink/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/BankLink/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BankLink/services/db_services.py" beforeDir="false" afterPath="$PROJECT_DIR$/BankLink/services/db_services.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BankLink/view_db.py" beforeDir="false" afterPath="$PROJECT_DIR$/BankLink/view_db.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -30,7 +36,14 @@
   </component>
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
+    &quot;Python.Account_Payment.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Electronic Fund Transfer.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Electronic_Fund_Transfer.executor&quot;: &quot;Run&quot;,
+    &quot;Python.PinScreen.executor&quot;: &quot;Run&quot;,
+    &quot;Python.SuccessScreen.executor&quot;: &quot;Run&quot;,
     &quot;Python.To_Mobile.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Update_user_info.executor&quot;: &quot;Run&quot;,
+    &quot;Python.User_Info.executor&quot;: &quot;Run&quot;,
     &quot;Python.authentication.executor&quot;: &quot;Run&quot;,
     &quot;Python.check_balance.executor&quot;: &quot;Run&quot;,
     &quot;Python.create_account.executor&quot;: &quot;Run&quot;,
@@ -43,6 +56,7 @@
     &quot;Python.main.executor&quot;: &quot;Run&quot;,
     &quot;Python.payment.executor&quot;: &quot;Run&quot;,
     &quot;Python.qr_scanner_screen.executor&quot;: &quot;Run&quot;,
+    &quot;Python.transcation.executor&quot;: &quot;Run&quot;,
     &quot;Python.user_info.executor&quot;: &quot;Run&quot;,
     &quot;Python.view_db.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
@@ -58,11 +72,11 @@
       <recent name="D:\Downloads\BankLink\Banklink_Desktop\bank\services" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\Downloads\BankLink\Banklink_Desktop\Pages\ui\screens" />
+      <recent name="D:\Downloads\BankLink\Banklink_Desktop\Pages\assets\Fonts" />
       <recent name="D:\Downloads\BankLink\Banklink_Desktop\Pages\assets\Images " />
       <recent name="D:\Downloads\BankLink\Banklink_Desktop\Pages" />
       <recent name="D:\Downloads\BankLink\Banklink_Desktop\" />
-      <recent name="D:\Downloads\BankLink\Banklink_Desktop\Pages\assets" />
-      <recent name="D:\Downloads\BankLink\Banklink_Desktop" />
     </key>
   </component>
   <component name="RunManager">

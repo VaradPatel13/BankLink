@@ -6,15 +6,22 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.graphics import Color, Rectangle
 from kivymd.uix.button import MDIconButton, MDRaisedButton
 from firebase_admin import db
-from services.authentication import decrypt_value  # Import decryption function
+from services.authentication import decrypt_value
+from kivy.core.text import LabelBase
+import os
 from services.session_manager import clear_session
 
 # Theme Colors
 PRIMARY_COLOR = (0.29, 0.0, 0.51, 1)  # Dark Purple
 TEXT_COLOR = (0.2, 0.2, 0.2, 1)  # Dark Gray
 ACCENT_COLOR = (1, 1, 1, 1)  # White
-FONT_PATH = "D:\\Downloads\\BankLink\\Banklink_Desktop\\Pages\\assets\\Fonts\\Poppins-Bold.ttf"  # Poppins font path
-
+# Font
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FONT_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "assets", "Fonts", "Poppins-Bold.ttf"))
+if os.path.exists(FONT_PATH):
+    LabelBase.register(name="Poppins", fn_regular=FONT_PATH)
+else:
+    raise FileNotFoundError(f"Font file not found: {FONT_PATH}")
 
 class UserInfoScreen(Screen):
     def __init__(self, **kwargs):
@@ -140,7 +147,7 @@ class UserInfoScreen(Screen):
     def logout(self, instance):
         """Handle logout and terminate session."""
         from Pages.login import LoginScreen
-        from services.session_manager import clear_session  # Import clear_session
+        # from services.session_manager import clear_session  # Import clear_session
 
         # Access the login screen and enable the login button
         login_screen = self.manager.get_screen("login")

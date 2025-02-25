@@ -2,7 +2,7 @@ import firebase_admin
 from firebase_admin import credentials, db
 
 # Path to your Firebase service account key JSON file
-CREDENTIAL_FILE_PATH = "D:/Downloads/BankLink/Banklink_Desktop/crendential.json"  # Update this to your credential file path
+CREDENTIAL_FILE_PATH = "D:\Downloads\BankLink\Banklink_Desktop\services\crendential.json"  # Update this to your credential file path
 
 # Firebase Realtime Database URL
 DATABASE_URL = "https://banklink2025-default-rtdb.asia-southeast1.firebasedatabase.app/"  # Update this with your database URL
