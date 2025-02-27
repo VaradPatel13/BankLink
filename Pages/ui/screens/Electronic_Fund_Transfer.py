@@ -18,7 +18,7 @@ from services.authentication import decrypt_value
 
 # Initialize Firebase
 if not firebase_admin._apps:
-    cred = credentials.Certificate("D:\\Downloads\\BankLink\\Banklink_Desktop\\services\\crendential.json")
+    cred = credentials.Certificate("../../../services/crendential.json")
     firebase_admin.initialize_app(cred, {'databaseURL': 'https://banklink-2025-default-rtdb.firebaseio.com/'})
 
 TRANSFER_MODES = ["NEFT", "RTGS", "IMPS"]
@@ -39,16 +39,16 @@ class FundTransferScreen(MDScreen):
             elevation=2,
             md_bg_color=(0.29, 0.0, 0.51, 1),
             specific_text_color=(1, 1, 1, 1),
-            size_hint_y=None,  # Fixed height
+            size_hint_y=None,
             height=dp(56),
-            pos_hint={"top": 1}  # Explicitly set to top
+            pos_hint={"top": 1}
         )
 
         main_layout = MDBoxLayout(
             orientation="vertical",
             spacing=dp(20),
             padding=dp(10),
-            size_hint_y=1  # Ensures proper layout expansion
+            size_hint_y=1
         )
 
         transfer_card = MDCard(
@@ -134,7 +134,7 @@ class FundTransferScreen(MDScreen):
 
     def send_otp(self, recipient_data, amount):
         self.otp = random.randint(100000, 999999)
-        print(f"📩 OTP sent: {self.otp}")
+        print(f"OTP sent: {self.otp}")
         self.show_otp_dialog(recipient_data, amount)
 
     def show_otp_dialog(self, recipient_data, amount):
@@ -195,11 +195,11 @@ class FundTransferScreen(MDScreen):
                 "sender_id": self.user_id,
                 "recipient_id": recipient_data["user_id"],
                 "amount": float(amount),
-                "status": "Completed",  # ✅ Change status from Pending to Completed
+                "status": "Completed",
             }
             transaction_ref.set(transaction_details)
 
-            print(f"✅ Transaction successful: {transaction_details}")
+            # print(f" Transaction successful: {transaction_details}")
             self.show_success("Transaction successful!")
 
             self.close_dialog(dialog)
@@ -220,7 +220,7 @@ class FundTransferScreen(MDScreen):
     def set_user_id(self, user_id):
         """Receives and stores the user ID"""
         self.user_id = user_id
-        print(f"✅ User ID set in {self.name}: {self.user_id}")
+        # print(f"User ID set in {self.name}: {self.user_id}")
 
 
 class ElectronicFundTransferScreen(MDApp):

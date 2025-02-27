@@ -11,7 +11,8 @@ def start_session(user_id, role):
     }
     with open(SESSION_FILE, "w") as f:
         json.dump(session_data, f)
-    print(f"Session started for User ID: {user_id}")
+    print("Session started")
+    # print(f"Session started for User ID: {user_id}")
 
 def get_session():
     """Retrieve session data if available."""

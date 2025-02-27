@@ -18,8 +18,19 @@ from kivymd.uix.bottomnavigation import MDBottomNavigation, MDBottomNavigationIt
 from kivy.core.text import LabelBase
 
 
-FONT_PATH = "D:\\Downloads\\BankLink\\Banklink_Desktop\\Pages\\assets\\Fonts\\Poppins-Bold.ttf"
-LabelBase.register(name="Poppins", fn_regular=FONT_PATH)
+import os, sys
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+# Then load your font:
+font_path = resource_path(os.path.join("Pages", "assets", "Fonts", "Poppins-Bold.ttf"))
 
 # Color Theme
 PRIMARY_COLOR = (0.29, 0.0, 0.51, 1)
@@ -242,7 +253,7 @@ class DashboardScreen(Screen):
             orientation="vertical",
             padding=20,
             spacing=10,
-            md_bg_color=(1, 1, 1, 1)  # White background
+            md_bg_color=(1, 1, 1, 1)
         )
 
         # QR Code Image
@@ -254,7 +265,7 @@ class DashboardScreen(Screen):
             font_style="H6",
             halign="center",
             theme_text_color="Custom",
-            text_color=(0.2, 0.2, 0.2, 1)  # Dark text for contrast
+            text_color=(0.2, 0.2, 0.2, 1)
         )
 
         # Close button
@@ -262,7 +273,7 @@ class DashboardScreen(Screen):
             text="Close",
             size_hint=(1, None),
             height=40,
-            md_bg_color=(0.29, 0.0, 0.51, 1)  # Primary color
+            md_bg_color=(0.29, 0.0, 0.51, 1)
         )
 
         # Add widgets to layout
@@ -275,8 +286,8 @@ class DashboardScreen(Screen):
             title="Your QR Code",
             content=popup_layout,
             size_hint=(0.8, 0.6),
-            background="assets/white_bg.png",  # A plain white background image (optional)
-            separator_color=(0.8, 0.8, 0.8, 1)  # Light grey separator
+            background="assets/white_bg.png",
+            separator_color=(0.8, 0.8, 0.8, 1)
         )
 
         close_button.bind(on_press=popup.dismiss)
@@ -313,9 +324,10 @@ class DashboardScreen(Screen):
         print("Showing Referrals")
 
     def switch_screen(self, screen_name, user_id):
-        print(f"Switching to {screen_name} with User ID: {user_id}")  # Debugging
+        print("Switching to screen: ", screen_name)
+        # print(f"Switching to {screen_name} with User ID: {user_id}")
         if screen_name in self.manager.screen_names:
-            print("user_id: ", user_id)
+            # print("user_id: ", user_id)
             target_screen = self.manager.get_screen(screen_name)
             if hasattr(target_screen, "set_user_id"):
                 target_screen.set_user_id(user_id)

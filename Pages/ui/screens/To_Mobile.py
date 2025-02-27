@@ -23,12 +23,19 @@ ACCENT_COLOR = (1, 1, 1, 1)  # White
 TEXT_COLOR = (0.2, 0.2, 0.2, 1)  # Dark Gray
 
 # Font
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-FONT_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "assets", "Fonts", "Poppins-Bold.ttf"))
-if os.path.exists(FONT_PATH):
-    LabelBase.register(name="Poppins", fn_regular=FONT_PATH)
-else:
-    raise FileNotFoundError(f"Font file not found: {FONT_PATH}")
+import os, sys
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+# Then load your font:
+font_path = resource_path(os.path.join("Pages", "assets", "Fonts", "Poppins-Bold.ttf"))
 
 
 class MobilePaymentScreen(MDScreen):
@@ -234,6 +241,9 @@ class MobilePaymentScreen(MDScreen):
         # Pass transaction details to PinEntryScreen
         pin_screen = self.manager.get_screen("pin_entry_screen")
         pin_screen.set_transaction_details(transaction_details, self.user_id)
+
+        self.recipient_input.text = ""
+        self.amount_input.text = ""
 
         self.manager.current = "pin_entry_screen"
         self.close_dialog(dialog)

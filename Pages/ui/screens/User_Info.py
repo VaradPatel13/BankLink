@@ -16,12 +16,19 @@ PRIMARY_COLOR = (0.29, 0.0, 0.51, 1)  # Dark Purple
 TEXT_COLOR = (0.2, 0.2, 0.2, 1)  # Dark Gray
 ACCENT_COLOR = (1, 1, 1, 1)  # White
 # Font
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-FONT_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "assets", "Fonts", "Poppins-Bold.ttf"))
-if os.path.exists(FONT_PATH):
-    LabelBase.register(name="Poppins", fn_regular=FONT_PATH)
-else:
-    raise FileNotFoundError(f"Font file not found: {FONT_PATH}")
+import os, sys
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+# Then load your font:
+font_path = resource_path(os.path.join("Pages", "assets", "Fonts", "Poppins-Bold.ttf"))
 
 class UserInfoScreen(Screen):
     def __init__(self, **kwargs):
@@ -128,7 +135,7 @@ class UserInfoScreen(Screen):
                 text=f"[b]{label}:[/b] {value}",
                 markup=True,
                 font_size='18sp',
-                font_name=FONT_PATH,  # Apply Poppins font
+                font_name= font_path,  # Apply Poppins font
                 color=TEXT_COLOR,
                 halign='left',
                 valign='middle',
@@ -146,12 +153,9 @@ class UserInfoScreen(Screen):
 
     def logout(self, instance):
         """Handle logout and terminate session."""
-        from Pages.login import LoginScreen
-        # from services.session_manager import clear_session  # Import clear_session
 
-        # Access the login screen and enable the login button
         login_screen = self.manager.get_screen("login")
-        login_screen.enable_login_button()  # Assuming the method exists in LoginScreen
+        login_screen.enable_login_button()
 
         # Clear session data
         clear_session()

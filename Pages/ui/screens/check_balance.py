@@ -32,8 +32,8 @@ class CheckBalanceScreen(Screen):
     def __init__(self, **kwargs):
         super(CheckBalanceScreen, self).__init__(**kwargs)
         self.user_id = None
-        self.account_number = None  # Initialize account number
-        self.balance_ref = None  # Store Firebase reference for real-time updates
+        self.account_number = None
+        self.balance_ref = None
 
         # Main Layout
         layout = BoxLayout(orientation='vertical', padding=[20, 40], spacing=15)
@@ -148,16 +148,16 @@ class CheckBalanceScreen(Screen):
                 self.account_number = decrypt_value(encrypted_account_number)
                 last_4_digits = self.account_number[-4:]
                 self.account_label.text = f"BankLink-{last_4_digits}"
-                self.get_balance()  # Fetch balance
+                self.get_balance()
             except Exception as e:
-                print(f"❌ Decryption Error: {str(e)}")
+                print(f" Decryption Error: {str(e)}")
                 self.account_label.text = "BankLink-****"
                 self.balance_amount_label.text = "₹0"
         else:
             self.account_label.text = "BankLink-****"
             self.balance_amount_label.text = "₹0"
 
-        print(f"✅ User ID set: {self.user_id}, Account Number: {self.account_number}")
+        # print(f" User ID set: {self.user_id}, Account Number: {self.account_number}")
 
 class chckapp(MDApp):
     def build(self):

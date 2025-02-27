@@ -6,6 +6,7 @@ from kivymd.uix.label import MDLabel
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.anchorlayout import MDAnchorLayout
+from services.firebase_config import get_account_number
 from kivy.uix.image import Image
 import datetime
 import os
@@ -20,11 +21,26 @@ from firebase_admin import db
 
 # Font
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-FONT_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "assets", "Fonts", "Poppins-Bold.ttf"))
-if os.path.exists(FONT_PATH):
-    LabelBase.register(name="Poppins", fn_regular=FONT_PATH)
+import os, sys
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+# Then load your font:
+font_path = resource_path(os.path.join("Pages", "assets", "Fonts", "Poppins-Bold.ttf"))
+
+CHECKMARK_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "assets", "Images", "checkmark.png"))
+if os.path.exists(CHECKMARK_PATH):
+    checkmark_image = Image(source=CHECKMARK_PATH)
 else:
-    raise FileNotFoundError(f"Font file not found: {FONT_PATH}")
+    raise FileNotFoundError(f"Image file not found: {CHECKMARK_PATH}")
+
 
 # Color Theme
 PRIMARY_COLOR = (0.29, 0.0, 0.51, 1)
@@ -81,7 +97,7 @@ class SuccessScreen(MDScreen):
         # Success Icon
         icon_container = MDAnchorLayout(anchor_x="center", anchor_y="center")
         icon_container.add_widget(Image(
-            source="assets/Images/checkmark.png",
+            source=CHECKMARK_PATH,
             size_hint=(None, None),
             size=(dp(80), dp(80)),
             allow_stretch=True
@@ -93,7 +109,7 @@ class SuccessScreen(MDScreen):
             font_name="Poppins",
             theme_text_color="Custom",
             text_color=(1, 1, 1, 1),
-            font_size="24sp",
+            font_size="36sp",
             halign="center",
             bold=True
         )
@@ -225,17 +241,34 @@ class SuccessScreen(MDScreen):
         main_layout.add_widget(footer)
         self.add_widget(main_layout)
 
+
+
     def display_transaction_details(self, transaction_details):
         """Displays transaction details and updates balance in Firebase."""
-        recipient_id = transaction_details.get("recipient_id", "Unknown")
-        sender_id = transaction_details.get("sender_id", "Unknown")
+        recipient_id = transaction_details.get("recipient_id", None)
+        sender_id = transaction_details.get("sender_id", None)
         amount = float(transaction_details.get("amount", 0.0))
 
-        self.paid_to_value.text = f"xxxxxxx{recipient_id[-4:]}\n@BankLink"
-        self.debited_from_value.text = f"xxxxxxx{sender_id[-4:]}\n@BankLink"
+        print(f"🔍 Encrypted Recipient ID: {recipient_id}")
+        print(f"🔍 Encrypted Sender ID: {sender_id}")
+
+
+        # 🔹 Fetch account numbers using the decrypted IDs
+        recipient_account = get_account_number(recipient_id)
+        sender_account = get_account_number(sender_id)
+
+        # 🔹 Ensure valid account numbers before slicing
+        masked_recipient = f"xxxxxxx{recipient_account[-4:]}" if recipient_account else "Unknown"
+        masked_sender = f"xxxxxxx{sender_account[-4:]}" if sender_account else "Unknown"
+
+        # 🔹 Display values in UI
+        self.paid_to_value.text = f"{masked_recipient}\n@BankLink"
+        self.debited_from_value.text = f"{masked_sender}\n@BankLink"
         self.paid_to_amount.text = f"₹ {amount:.2f}"
 
-        self.update_user_balances(sender_id, recipient_id, amount)
+        # 🔹 Update balances in Firebase (only if valid)
+        if recipient_account and sender_account:
+            self.update_user_balances(sender_account, recipient_account, amount)
 
     def update_user_balances(self, sender_id, recipient_id, amount):
         """Fetch and update sender and recipient balances in Firebase."""
@@ -300,8 +333,8 @@ class SuccessApp(MDApp):
     def build(self):
         screen = SuccessScreen(balance=20000)
         screen.display_transaction_details({
-            "recipient_id": "12345678",
-            "sender_id": "87654321",
+            "recipient_id": "bhyJ77Q0LHRn4OxgQJFrZQ7tduk1",
+            "sender_id": "9kUAijuHmdgKHGl5AwTuS77R28f1",
             "amount": 5000
         })
         return screen

@@ -1,5 +1,6 @@
-import sqlite3
 import random
+import firebase_admin
+from firebase_admin import auth, db
 from kivy.uix.image import Image
 from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
@@ -9,13 +10,21 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
 from kivy.uix.popup import Popup
 from kivy.uix.floatlayout import FloatLayout
-from kivy.graphics import Color, Rectangle  # Add this import for Color
+from kivy.graphics import Color, Rectangle
+from hashlib import sha256
+
+# Firebase Initialization (Ensure this is set up in your main application)
+if not firebase_admin._apps:
+    cred = firebase_admin.credentials.Certificate("path/to/your/firebase-adminsdk.json")
+    firebase_admin.initialize_app(cred, {
+        'databaseURL': 'https://your-database-url.firebaseio.com'
+    })
 
 # Theme Colors
-PRIMARY_COLOR = (0.29, 0.0, 0.51, 1)  # Dark Purple (#4B0082)
-SECONDARY_COLOR = (0.58, 0.44, 0.86, 1)  # Light Purple (#9370DB)
-ACCENT_COLOR = (1, 1, 1, 1)  # White (#FFFFFF)
-TEXT_COLOR = (0.2, 0.2, 0.2, 1)  # Dark Gray (#333333)
+PRIMARY_COLOR = (0.29, 0.0, 0.51, 1)  # Dark Purple
+SECONDARY_COLOR = (0.58, 0.44, 0.86, 1)  # Light Purple
+ACCENT_COLOR = (1, 1, 1, 1)  # White
+TEXT_COLOR = (0.2, 0.2, 0.2, 1)  # Dark Gray
 
 class ForgotPasswordScreen(Screen):
     def __init__(self, **kwargs):
@@ -27,37 +36,29 @@ class ForgotPasswordScreen(Screen):
             self.rect = Rectangle(size=self.size, pos=self.pos)
         self.bind(size=self._update_rect, pos=self._update_rect)
 
-        # Main layout using AnchorLayout to center content
+        # Main layout
         main_layout = AnchorLayout(anchor_x='center', anchor_y='center')
 
         # Content container
         content = BoxLayout(
             orientation='vertical',
             size_hint=(None, None),
-            size=(300, 250),  # Width, Height
+            size=(300, 250),
             spacing=15,
             padding=20
         )
 
-        # Title Label
+        # Title
         title = Label(
             text="Reset Password",
             font_size=24,
-            color=PRIMARY_COLOR,  # Dark Purple
+            color=PRIMARY_COLOR,
             bold=True,
             size_hint=(1, None),
             height=40
         )
 
-        # Input Fields Container
-        input_layout = BoxLayout(
-            orientation='vertical',
-            spacing=10,
-            size_hint=(1, None),
-            height=90
-        )
-
-        # TextInput styling
+        # Input Fields
         input_style = {
             'size_hint': (1, None),
             'height': 40,
@@ -72,22 +73,15 @@ class ForgotPasswordScreen(Screen):
             'cursor_color': PRIMARY_COLOR
         }
 
-        self.account_input = TextInput(
-            hint_text="Account Number",
-            **input_style
-        )
+        self.account_input = TextInput(hint_text="Account Number", **input_style)
+        self.mobile_input = TextInput(hint_text="Registered Mobile Number", **input_style)
 
-        self.mobile_input = TextInput(
-            hint_text="Registered Mobile Number",
-            **input_style
-        )
-
-        # Submit Button
+        # Buttons
         submit_button = Button(
             text="Verify",
             size_hint=(1, None),
             height=45,
-            background_color=PRIMARY_COLOR,  # Dark Purple
+            background_color=PRIMARY_COLOR,
             color=ACCENT_COLOR,
             bold=True,
             font_size=16,
@@ -95,12 +89,11 @@ class ForgotPasswordScreen(Screen):
         )
         submit_button.bind(on_press=self.verify_user)
 
-        # Back Button
         back_button = Button(
             text="Back to Login",
             size_hint=(1, None),
             height=45,
-            background_color=SECONDARY_COLOR,  # Light Purple
+            background_color=SECONDARY_COLOR,
             color=ACCENT_COLOR,
             bold=True,
             font_size=16,
@@ -108,14 +101,12 @@ class ForgotPasswordScreen(Screen):
         )
         back_button.bind(on_press=self.go_to_login)
 
-        # Assemble UI components
-        input_layout.add_widget(self.account_input)
-        input_layout.add_widget(self.mobile_input)
-
+        # Add components to UI
         content.add_widget(title)
-        content.add_widget(input_layout)
+        content.add_widget(self.account_input)
+        content.add_widget(self.mobile_input)
         content.add_widget(submit_button)
-        content.add_widget(back_button)  # Add the back button at the bottom
+        content.add_widget(back_button)
 
         main_layout.add_widget(content)
         self.add_widget(main_layout)
@@ -129,7 +120,7 @@ class ForgotPasswordScreen(Screen):
         self.manager.current = 'login'
 
     def verify_user(self, instance):
-        """Verify the user before resetting password."""
+        """Verify user credentials in Firebase."""
         account = self.account_input.text.strip()
         mobile = self.mobile_input.text.strip()
 
@@ -137,13 +128,11 @@ class ForgotPasswordScreen(Screen):
             self.show_popup("Error", "Please fill in all fields.", (1, 0, 0, 1))
             return
 
-        conn = sqlite3.connect("banklink.db")
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE account_number = ? AND mobile = ?", (account, mobile))
-        user = cursor.fetchone()
-        conn.close()
+        # Fetch user data from Firebase
+        ref = db.reference(f"/users/{account}")
+        user_data = ref.get()
 
-        if user:
+        if user_data and user_data.get("mobile") == mobile:
             self.show_otp_popup()
         else:
             self.show_popup("Error", "Account not found. Check details.", (1, 0, 0, 1))
@@ -153,7 +142,6 @@ class ForgotPasswordScreen(Screen):
         self.otp_code = str(random.randint(1000, 9999))
 
         layout = BoxLayout(orientation='vertical', padding=10, spacing=10)
-        layout.background_color = PRIMARY_COLOR
 
         otp_label = Label(
             text=f"Enter OTP [Simulated: {self.otp_code}]",
@@ -202,20 +190,24 @@ class ForgotPasswordScreen(Screen):
         self.popup.open()
 
     def reset_password(self, instance):
-        """Verify OTP and reset password"""
+        """Verify OTP and reset password in Firebase."""
         if self.otp_input.text == self.otp_code:
             account = self.account_input.text.strip()
             new_password = self.new_password_input.text.strip()
 
-            conn = sqlite3.connect("banklink.db")
-            cursor = conn.cursor()
-            cursor.execute("UPDATE users SET password = ? WHERE account_number = ?", (new_password, account))
-            conn.commit()
-            conn.close()
+            if not new_password:
+                self.show_popup("Error", "Password cannot be empty.", (1, 0, 0, 1))
+                return
+
+            # Hash password before storing
+            hashed_password = sha256(new_password.encode()).hexdigest()
+
+            # Update Firebase database
+            ref = db.reference(f"/users/{account}")
+            ref.update({"password": hashed_password})
 
             self.popup.dismiss()
-            self.show_popup("Success", "Password reset successfully! "
-                                       "You can now log in.", (0, 0.7, 0, 1))
+            self.show_popup("Success", "Password reset successfully! You can now log in.", (0, 0.7, 0, 1))
             self.manager.current = 'login'
         else:
             self.show_popup("Error", "Incorrect OTP. Try again.", (1, 0, 0, 1))
@@ -232,16 +224,9 @@ class ForgotPasswordScreen(Screen):
             title=title,
             title_color=ACCENT_COLOR,
             content=popup_content,
-            size_hint=(1, 0.5),
+            size_hint=(0.8, 0.3),
             background_color=PRIMARY_COLOR,
             separator_color=SECONDARY_COLOR,
             title_align='center'
         )
-
-        # Set title background color
-        if title == "Error":
-            popup.title_color = (1, 0, 0, 1)
-        elif title == "Success":
-            popup.title_color = (0, 1, 0, 1)
-
         popup.open()

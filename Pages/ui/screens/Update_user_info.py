@@ -15,7 +15,7 @@ from firebase_admin import credentials, db
 
 # 🔹 Firebase Configuration
 if not firebase_admin._apps:
-    cred = credentials.Certificate("D:\\Downloads\\BankLink\\Banklink_Desktop\\services\\crendential.json")
+    cred = credentials.Certificate("../../../services/crendential.json")
     firebase_admin.initialize_app(cred, {
         'databaseURL': 'https://banklink-2025-default-rtdb.firebaseio.com/'
     })
@@ -28,11 +28,11 @@ if os.path.exists(FONT_PATH):
 else:
     raise FileNotFoundError(f"Font file not found: {FONT_PATH}")
 
-
-# 🔹 Define Theme Colors
-PRIMARY_COLOR = (0.29, 0.0, 0.51, 1)  # Dark Purple
-ACCENT_COLOR = (1, 1, 1, 1)  # White
-TEXT_COLOR = (0.2, 0.2, 0.2, 1)  # Dark Gray
+PRIMARY_COLOR = (0.29, 0.0, 0.51, 1)
+SECONDARY_COLOR = (0.58, 0.44, 0.86, 1)
+ACCENT_COLOR = (1, 1, 1, 1)
+TEXT_COLOR = (0.2, 0.2, 0.2, 1)
+WHITE_COLOR = (1, 1, 1, 1)
 
 
 class UpdateUserInfoScreen(MDScreen):
@@ -47,13 +47,14 @@ class UpdateUserInfoScreen(MDScreen):
 
     def create_ui(self):
         """ Create UI for settings screen """
-        self.main_layout.clear_widgets()  # Ensure UI resets completely
+        self.main_layout.clear_widgets()
 
         # 🔹 Top App Bar
         self.top_bar = MDTopAppBar(
             title="Settings",
             elevation=4,
             md_bg_color=PRIMARY_COLOR,
+            specific_text_color=ACCENT_COLOR,
             left_action_items=[["arrow-left", lambda x: self.go_back()]]
         )
         self.main_layout.add_widget(self.top_bar)
@@ -84,7 +85,7 @@ class UpdateUserInfoScreen(MDScreen):
         user_data = ref.get()
         if user_data:
             self.user_data = user_data
-            print("Fetched User Data:", self.user_data)
+            # print("Fetched User Data:", self.user_data)
         else:
             print("User not found!")
 
@@ -117,17 +118,18 @@ class UpdateUserInfoScreen(MDScreen):
         hashed_password = ref.get()
 
         if not bcrypt.checkpw(old_password.encode(), hashed_password.encode()):
-            print("Old password is incorrect!")
+
+            # print("Old password is incorrect!")
             return
 
         if new_password != confirm_password:
-            print("Passwords do not match!")
+            # print("Passwords do not match!")
             return
 
         new_hashed_password = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
         ref.set(new_hashed_password)
 
-        print("Password Updated Successfully!")
+        # print("Password Updated Successfully!")
         self.reload_settings_screen()
 
     # 🔹 Update Mobile UI
@@ -135,8 +137,8 @@ class UpdateUserInfoScreen(MDScreen):
         self.clear_layout()
 
         self.new_mobile = MDTextField(hint_text="Enter New Mobile Number")
-        change_btn = MDRaisedButton(text="Change Mobile", on_release=self.update_mobile)
-        back_btn = MDRaisedButton(text="Back", on_release=self.reload_settings_screen)
+        change_btn = MDRaisedButton(text="Change Mobile", md_bg_color=PRIMARY_COLOR ,on_release=self.update_mobile)
+        back_btn = MDRaisedButton(text="Back",  md_bg_color=SECONDARY_COLOR ,on_release=self.reload_settings_screen)
 
         layout = MDBoxLayout(orientation="vertical", padding=20, spacing=10)
         layout.add_widget(self.new_mobile)
@@ -157,7 +159,6 @@ class UpdateUserInfoScreen(MDScreen):
         print("Mobile Updated Successfully!")
         self.reload_settings_screen()
 
-    # 🔹 Update Name UI
     def update_name_ui(self, instance):
         self.clear_layout()
 
@@ -180,7 +181,6 @@ class UpdateUserInfoScreen(MDScreen):
         print("Name Updated Successfully!")
         self.reload_settings_screen()
 
-    # 🔹 Update Address UI
     def update_address_ui(self, instance):
         self.clear_layout()
 
@@ -223,7 +223,7 @@ class UpdateUserInfoScreen(MDScreen):
 
 class UpdateAPP(MDApp):
     def build(self):
-        return UpdateUserInfoScreen(user_id="bhyJ77Q0LHRn4OxgQJFrZQ7tduk1")
+        return UpdateUserInfoScreen(user_id="sd")
 
 
 if __name__ == "__main__":

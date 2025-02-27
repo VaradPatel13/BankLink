@@ -16,7 +16,7 @@ import os
 
 # Check if Firebase is already initialized
 if not firebase_admin._apps:
-    cred = credentials.Certificate("D:\\Downloads\\BankLink\\Banklink_Desktop\\services\\crendential.json")
+    cred = credentials.Certificate("../../../services/crendential.json")
     firebase_admin.initialize_app(cred, {
         'databaseURL': 'https://banklink-2025-default-rtdb.firebaseio.com/'
     })
@@ -141,7 +141,7 @@ class PinEntryScreen(MDScreen):
         """Sets transaction details and user ID."""
         self.transaction_details = transaction_details
         self.user_id = user_id
-        print(f"✅ Transaction details set in PinEntryScreen: {self.transaction_details}")
+        # print(f"Transaction details set in PinEntryScreen: {self.transaction_details}")
 
     def on_key_press(self, instance):
         if len(self.entered_pin) < 6:
@@ -159,7 +159,7 @@ class PinEntryScreen(MDScreen):
 
     def verify_pin(self):
         if not self.user_id:
-            print("❌ User ID not found.")
+            # print(" User ID not found.")
             return
 
         user_ref = db.reference(f'users/{self.user_id}/password')
@@ -167,12 +167,33 @@ class PinEntryScreen(MDScreen):
         entered_pin_str = "".join(self.entered_pin)
 
         if stored_hash and bcrypt.checkpw(entered_pin_str.encode(), stored_hash.encode()):
-            print("✅ PIN verified! Navigating to SuccessScreen...")
+            print("PIN verified! Navigating to SuccessScreen...")
             self.manager.get_screen("success_screen").display_transaction_details(self.transaction_details)
             self.manager.current = "success_screen"
         else:
-            print("❌ Incorrect PIN. Returning to MobilePaymentScreen.")
-            self.manager.current = "mobile_payment"
+            # print( " Incorrect PIN. Returning to MobilePaymentScreen.")
+            self.clear_pin_fields()
+            self.show_error_message()
+
+    def clear_pin_fields(self):
+        """Clears the entered PIN fields."""
+        self.entered_pin.clear()
+        for field in self.pin_fields:
+            field.text = "_"
+
+    def show_error_message(self):
+        """Displays an error message on incorrect PIN."""
+        error_label = MDLabel(
+            text="Incorrect PIN. Try again.",
+            font_name="Poppins",
+            halign="center",
+            theme_text_color="Error",
+            font_size="14sp"
+        )
+        self.layout.add_widget(error_label)
+        from kivy.clock import Clock
+        Clock.schedule_once(lambda dt: self.layout.remove_widget(error_label), 2)
+
 
 # Start App Screen
 class PinApp(MDApp):

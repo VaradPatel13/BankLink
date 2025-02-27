@@ -14,8 +14,20 @@ import bcrypt
 from cryptography.fernet import Fernet
 from services.firebase_config import register_user, store_user_details
 
-# Register Poppins Font
-LabelBase.register(name="Poppins", fn_regular="D:\\Downloads\\BankLink\\Banklink_Desktop\\Pages\\assets\\Fonts\\Poppins-Bold.ttf")
+# Font
+import os, sys
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+# Then load your font:
+font_path = resource_path(os.path.join("Pages", "assets", "Fonts", "Poppins-Bold.ttf"))
 
 # Define theme colors
 PRIMARY_COLOR = (0.29, 0.0, 0.51, 1)  # Dark Purple
@@ -23,7 +35,7 @@ ACCENT_COLOR = (1, 1, 1, 1)  # White
 TEXT_COLOR = (0.2, 0.2, 0.2, 1)  # Dark Gray
 BUTTON_COLOR = PRIMARY_COLOR  # Uniform Button Color
 
-# Encryption Key (store this securely, do not regenerate each time)
+# Encryption Key
 ENCRYPTION_KEY = b'fTvxVcDZNOYAmt1D33OUwkFBdibYi_F0tN6Y_lOQTAk='
 cipher_suite = Fernet(ENCRYPTION_KEY)
 
@@ -40,7 +52,7 @@ class CreateAccountScreen(Screen):
 
         # Background Color
         with layout.canvas.before:
-            Color(0.95, 0.95, 0.95, 1)  # Light Gray Background
+            Color(0.95, 0.95, 0.95, 1)
             self.rect = Rectangle(size=self.size, pos=self.pos)
             layout.bind(size=self.update_rect, pos=self.update_rect)
 

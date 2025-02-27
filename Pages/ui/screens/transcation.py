@@ -29,9 +29,9 @@ WHITE_COLOR = (1, 1, 1, 1)
 
 FIREBASE_DATABASE_URL = "https://banklink-2025-default-rtdb.firebaseio.com/"
 
-# Initialize Firebase (Ensure the correct path to your Firebase Admin SDK JSON)
+# Initialize Firebase
 if not firebase_admin._apps:
-    cred = credentials.Certificate("D:\\Downloads\\BankLink\\Banklink_Desktop\\services\\crendential.json")
+    cred = credentials.Certificate("../../../services/crendential.json")
     firebase_admin.initialize_app(cred, {
         'databaseURL': 'https://banklink-2025-default-rtdb.firebaseio.com/'
     })
@@ -52,7 +52,7 @@ class TransactionScreen(Screen):
         self.app_bar = MDTopAppBar(
             title="Transactions",
             elevation=4,
-            md_bg_color=PRIMARY_COLOR,  # Applying Theme
+            md_bg_color=PRIMARY_COLOR,
             specific_text_color=WHITE_COLOR
         )
         self.layout.add_widget(self.app_bar)
@@ -61,9 +61,9 @@ class TransactionScreen(Screen):
         self.search_bar = MDTextField(
             hint_text="Search Transactions",
             size_hint_x=0.9,
-            line_color_focus=SECONDARY_COLOR,  # Focused line color
-            text_color_normal=TEXT_COLOR,  # Default text color
-            text_color_focus=TEXT_COLOR  # Text color when focused
+            line_color_focus=SECONDARY_COLOR,
+            text_color_normal=TEXT_COLOR,
+            text_color_focus=TEXT_COLOR
         )
         self.layout.add_widget(self.search_bar)
 
@@ -150,7 +150,7 @@ class TransactionScreen(Screen):
     def set_user_id(self, user_id):
         """Set the user ID and fetch transactions."""
         self.user_id = user_id
-        print(f"User ID Set: {self.user_id}")  # Debugging output
+        # print(f"User ID Set: {self.user_id}")
         self.fetch_transactions()
 
     def fetch_transactions(self):
@@ -163,7 +163,7 @@ class TransactionScreen(Screen):
         else:
             self.transactions = []
 
-        print(f"Fetched {len(self.transactions)} transactions.")  # Debugging print
+        # print(f"Fetched {len(self.transactions)} transactions.")
         self.display_transactions()
 
     def display_transactions(self):
@@ -214,7 +214,7 @@ class TransactionScreen(Screen):
             transaction_card.add_widget(card_box)
 
             # Debugging print
-            print(f"Displaying transaction: {transaction}")
+            # print(f"Displaying transaction: {transaction}")
 
             # Add transaction card to the list
             self.transaction_list.add_widget(transaction_card)
@@ -228,7 +228,7 @@ class TransactionScreen(Screen):
 
     def fetch_user_name(self, user_id):
         try:
-            ref = db.reference(f"users/{user_id}/name")  # Reference to the user's name
+            ref = db.reference(f"users/{user_id}/name")
             user_name = ref.get()
 
             if user_name:
@@ -237,7 +237,7 @@ class TransactionScreen(Screen):
                 return "Unknown User"
 
         except Exception as e:
-            print(f"Error fetching user name for {user_id}: {str(e)}")
+            # print(f"Error fetching user name for {user_id}: {str(e)}")
             return "Unknown User"
     def show_transaction_details(self, transaction):
         """Show transaction details in a dialog."""
@@ -286,7 +286,7 @@ class TransactionScreen(Screen):
         self.display_transactions()
         self.filter_menu.dismiss()
 
-    def download_statement(self, instance=None):  # Accept extra argument
+    def download_statement(self, instance=None):
         pdf_file = "transactions.pdf"
         c = canvas.Canvas(pdf_file)
 

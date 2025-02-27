@@ -12,19 +12,23 @@ from kivymd.uix.button import MDFlatButton
 from firebase_admin import db
 from kivymd.app import MDApp
 from kivymd.font_definitions import LabelBase
-from kivymd.uix.label import MDIcon
 from kivy.clock import Clock
 from services.authentication import decrypt_value
-import os
 
+import os, sys
 
-# Font
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-FONT_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "assets", "Fonts", "Poppins-Bold.ttf"))
-if os.path.exists(FONT_PATH):
-    LabelBase.register(name="Poppins", fn_regular=FONT_PATH)
-else:
-    raise FileNotFoundError(f"Font file not found: {FONT_PATH}")
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+# Then load your font:
+font_path = resource_path(os.path.join("Pages", "assets", "Fonts", "Poppins-Bold.ttf"))
+
 
 PRIMARY_COLOR = (0.29, 0.0, 0.51, 1)
 SECONDARY_COLOR = (0.58, 0.44, 0.86, 1)
@@ -56,7 +60,7 @@ class AccountPaymentScreen(MDScreen):
         payment_card = MDCard(
             orientation="vertical",
             size_hint=(0.8, None),
-            size=(dp(320), dp(340)),  # Fixed size for responsiveness
+            size=(dp(320), dp(340)),
             elevation=2,
             radius=dp(20),
             padding=dp(25),
@@ -154,10 +158,10 @@ class AccountPaymentScreen(MDScreen):
             orientation="vertical",
             spacing=dp(10),
         )
-        main_layout.add_widget(self.toolbar)  # Toolbar at the top
-        main_layout.add_widget(card_wrapper)  # Card below the toolbar
+        main_layout.add_widget(self.toolbar)
+        main_layout.add_widget(card_wrapper)
 
-        self.add_widget(main_layout)  # Add the entire layout to the screen
+        self.add_widget(main_layout)
 
     def animate_button(self, instance):
         anim = Animation(
@@ -186,7 +190,7 @@ class AccountPaymentScreen(MDScreen):
             self.show_error("Please fill all fields")
             return
 
-        if len(account_number) != 10:  # Ensure proper length
+        if len(account_number) != 10:
             self.show_error("Invalid account number (10 digits required)")
             return
 
@@ -196,8 +200,8 @@ class AccountPaymentScreen(MDScreen):
 
             # Search through stored encrypted account numbers
             for user_id, user_info in users_ref.items():
-                encrypted_account = user_info.get("account_number")  # Encrypted value
-                decrypted_account = decrypt_value(encrypted_account)  # Decrypt account number
+                encrypted_account = user_info.get("account_number")
+                decrypted_account = decrypt_value(encrypted_account)
 
                 if decrypted_account == account_number:
                     recipient_data = user_info
@@ -247,8 +251,8 @@ class AccountPaymentScreen(MDScreen):
             "amount": float(amount)
         }
 
-        print(f"✅ Transaction details stored: {transaction_details}")
-        print("🔄 Navigating to PIN verification screen...")
+        # print(f" Transaction details stored: {transaction_details}")
+        print(" Navigating to PIN verification screen...")
 
         # Pass transaction details to PinEntryScreen
         pin_screen = self.manager.get_screen("pin_entry_screen")
@@ -257,6 +261,7 @@ class AccountPaymentScreen(MDScreen):
         self.manager.current = "pin_entry_screen"
         self.close_dialog(dialog)
 
+        self.clear_fields()
 
     def show_error(self, message):
         if not self.dialog:
@@ -270,9 +275,14 @@ class AccountPaymentScreen(MDScreen):
                 ],
             )
         else:
-            self.dialog.text = message  # Update message
+            self.dialog.text = message
 
         self.dialog.open()
+        self.amount_input.text = ""
+    def clear_fields(self):
+
+        self.account_input.text = ""
+        self.amount_input.text = ""
 
 
 class AccountApp(MDApp):
