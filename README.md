@@ -132,7 +132,8 @@ Auto-Saving Beneficiaries for quick money transfers.
 
 ## 📞 Contact
 👉 **Developer:** [Varad](https://github.com/VaradPatel13)  
-👉 **Email:** varadp216@gmail.com
-👉 **GitHub:** [https://github.com/VaradPatel13/BankLink](https://github.com/VaradPatel13/BankLink)  
+👉 **Email:** varadp216@gmail.com.
+👉 **GitHub:** [https://github.com/VaradPatel13/BankLink](https://github.com/VaradPatel13/BankLink) 
+👉 **Figma Design:** https://www.figma.com/design/qSZMCnnXdu9zmhhzAhHbZj/Banklink?node-id=0-1&t=l9hcDDmn7o07lgoW-1
 👉 **LinkedIn:** [www.linkedin.com/in/varad-patel](www.linkedin.com/in/varad-patel)  
 
