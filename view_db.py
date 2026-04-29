@@ -2,7 +2,7 @@
 #
 # # Database file
 
-
+commit 
 #
 # # Theme Colors (ANSI Escape Codes)
 # PRIMARY_COLOR = "\033[38;2;74;0;130m"  # Dark Purple (#4B0082)
